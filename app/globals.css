@@ -5,11 +5,33 @@
   --foreground: #171717;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@theme {
+  /* ==========================================
+     СЕМАНТИЧНА ДИЗАЙН-СИСТЕМА (GENIUS LAND)
+     ========================================== */
+  
+  /* Колір назви бренду в логотипі */
+  --color-brand-logoName: #000000;     /* Чорний колір назви */
+
+  /* 1. Брендові кольори (основа) */
+  --color-brand-primary: #4f46e5;      
+  --color-brand-primaryHover: #4338ca; 
+  --color-brand-secondary: #ec4899;    
+  
+  /* 2. Кольори фонів */
+  --color-bg-main: #F6D8AE;            /* НАШ НОВИЙ ТЕПЛИЙ КРЕМОВИЙ ФОН ВСЬОГО САЙТУ */
+  --color-bg-sectionAlt: #fbf0e3;      /* Трохи світліший відтінок для чергування блоків */    
+  --color-bg-header: rgba(36, 123, 160, 0.9);
+  
+  /* 3. Кольори тексту */
+  --color-text-title: #0f172a;         
+  --color-text-body: #334155;          
+  --color-text-muted: #64748b;         
+  
+  /* 4. Кнопки заклику до дії (CTA) */
+  --color-btn-ctaBg: #facc15;          
+  --color-btn-ctaBgHover: #eab308;     
+  --color-btn-ctaText: #0f172a;        
 }
 
 @media (prefers-color-scheme: dark) {
@@ -19,8 +41,64 @@
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Перезаписуємо фон самого монітора ("вуха" по боках) */
+/* Перезаписуємо фон самого монітора ("вуха" по боках) */
+html, body {
+  background-color: #D9C1A6 !important; /* Глибший, насиченіший колір "вух" */
+  color: var(--color-text-body);
+}
+
+/* На випадок, якщо Next.js root перекриває фон */
+#root, [data-reactroot] {
+  background-color: #D9C1A6;
+}
+/* Анімація плавного виходу знизу вгору */
+/* Анімація плавного виходу знизу вгору */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  opacity: 0; /* Стартовий стан закладаємо сюди, щоб Tailwind його не перебивав */
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Ефект безкінечного розширення хвилі (тільки кругла тінь) */
+@keyframes buttonPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(250, 204, 21, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
+  }
+}
+
+/* Ефект м'якого погойдування */
+@keyframes buttonFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* Цей клас вішаємо на обгортку для руху */
+.animate-btn-float {
+  animation: buttonFloat 3s ease-in-out infinite;
+}
+
+/* Цей клас вішаємо на саму кнопку для ідеально круглої тіні */
+.animate-pulse-wave {
+  animation: buttonPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
