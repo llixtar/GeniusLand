@@ -16,12 +16,12 @@
   /* 1. Брендові кольори (основа) */
   --color-brand-primary: #4f46e5;      
   --color-brand-primaryHover: #4338ca; 
-  --color-brand-secondary: #ec4899;    
+  --color-brand-secondary: #6C91C2;    
   
   /* 2. Кольори фонів */
   --color-bg-main: #F6D8AE;            /* НАШ НОВИЙ ТЕПЛИЙ КРЕМОВИЙ ФОН ВСЬОГО САЙТУ */
   --color-bg-sectionAlt: #fbf0e3;      /* Трохи світліший відтінок для чергування блоків */    
-  --color-bg-header: rgba(36, 123, 160, 0.9);
+  --color-bg-header: #0d5087;
   
   /* 3. Кольори тексту */
   --color-text-title: #0f172a;         
