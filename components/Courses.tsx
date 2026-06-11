@@ -96,7 +96,7 @@ export default function Courses() {
           <h2 className="text-3xl font-black tracking-tight text-text-title sm:text-4xl uppercase">
             Наші напрями
           </h2>
-          
+          <div className="mt-2 h-1 w-16 bg-brand-logoName mx-auto rounded-full" />
         </div>
 
         {/* СІТКА 3-3-1 */}

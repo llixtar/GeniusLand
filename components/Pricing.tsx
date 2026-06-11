@@ -1,139 +1,143 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { useState } from "react";
+import { Sparkles, ArrowRight } from "lucide-react";
 
 export default function Pricing() {
-  const plans = [
-    {
-      name: "Пробний старт",
-      price: 0,
-      period: "1 заняття",
-      desc: "Знайомство з викладачем, атмосферою школи та визначення рівня дитини.",
-      features: [
-        "Тестування навичок дитини",
-        "Участь в ігровому уроці",
-        "Консультація методиста",
-        "Батьківський звіт",
-      ],
-      cta: "Записатись безкоштовно",
-      hit: false,
-    },
-    {
-      name: "Базовий абонемент",
-      price: 1200,
-      period: "місяць",
-      desc: "Оптимальний варіант для регулярних занять та стабільного прогресу.",
-      features: [
-        "8 занять на місяць (2 на тиждень)",
-        "Усі навчальні матеріали",
-        "Зворотний зв'язок після уроків",
-        "Можливість відпрацювання",
-      ],
-      cta: "Придбати абонемент",
-      hit: true, // Ця картка залишається візуально виділеною
-    },
-    {
-      name: "Індівидуальний",
-      price: 2400,
-      period: "місяць",
-      desc: "Персональна програма навчання, підлаштована під темп та цілі вашої дитини.",
-      features: [
-        "8 індивідуальних занять",
-        "Гнучкий графік уроків",
-        "Персональний викладач",
-        "Корекція програми на ходу",
-      ],
-      cta: "Обрати індивідуальний",
-      hit: false,
-    },
-  ];
+  const [billingPlan, setBillingPlan] = useState<"group" | "individual">("group");
+
+  const pricingData = {
+    group: [
+      { name: "РЕПЕТИТОРСТВО", lessons: "8 занять", price: "1620 грн", duration: "55" },
+      { name: "АНГЛІЙСЬКА МОВА", lessons: "8 занять", price: "1590 грн", duration: "55" },
+      { name: "ЛОГОПЕД", lessons: "8 занять", price: "2000 грн", duration: "30" },
+      { name: "МЕНТАЛЬНА АРИФМЕТИКА", lessons: "4 заняття", price: "1190 грн", duration: "55" },
+      { name: "ШВИДКОЧИТАННЯ", lessons: "4 заняття", price: "1590 грн", duration: "55" },
+      { name: "ПІДГОТОВКА ДО ШКОЛИ", lessons: "8 занять", price: "1620 грн", duration: "55" },
+    ],
+    individual: [
+      { name: "РЕПЕТИТОРСТВО", lessons: "8 занять", price: "2500 грн", duration: "40" },
+      { name: "АНГЛІЙСЬКА МОВА", lessons: "8 занять", price: "2800 грн", duration: "40", altPack: { lessons: "12 занять", price: "4200 грн" } },
+      { name: "ЛОГОПЕД", lessons: "8 занять", price: "2200 грн", duration: "30" },
+      { name: "ТАБЛИЦЯ МНОЖЕННЯ", lessons: "8 занять", price: "2500 грн", duration: "40" },
+      { name: "МЕНТАЛЬНА АРИФМЕТИКА", lessons: "4 заняття", price: "1600 грн", duration: "40" },
+      { name: "ШВИДКОЧИТАННЯ", lessons: "4 заняття", price: "1500 грн", duration: "40", altPack: { lessons: "8 занять", price: "3000 грн" } },
+      { name: "ПІДГОТОВКА ДО ШКОЛИ", lessons: "8 занять", price: "2500 грн", duration: "40" },
+    ],
+  };
 
   return (
-    <section id="pricing" className="relative bg-transparent pt-16 pb-24 border-t border-black/5">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        
-        {/* Заголовок */}
-        <div className="text-center max-w-2xl mx-auto mb-16">
+    <section id="prices" className="relative bg-transparent pt-12 pb-20 border-t-2 border-black">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+
+        {/* Заголовок блоку */}
+        <div className="text-center max-w-xl mx-auto mb-8">
           <h2 className="text-2xl font-black tracking-tight text-text-title sm:text-3xl uppercase">
-            Вартість навчання
+            Вартість заняття
           </h2>
           <div className="mt-2 h-1 w-16 bg-brand-logoName mx-auto rounded-full" />
-          <p className="mt-3 text-sm font-medium text-text-muted">
-            Прозорі тарифи без прихованих платежів. Оберіть зручний формат
-          </p>
         </div>
 
-        {/* СІТКА ТАРИФІВ (ЧИСТА ГЕОМЕТРІЯ БЕЗ ТУМБЛЕРА) */}
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto items-center">
-          {plans.map((plan, index) => (
+        {/* Перемикач форматів занять */}
+        <div className="flex justify-center mb-10">
+          <div className="relative flex p-1 border-2 border-black bg-white rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <button
+              onClick={() => setBillingPlan("group")}
+              className={`rounded-lg px-4 py-1.5 text-[11px] font-black uppercase tracking-wider transition-all duration-150 ${billingPlan === "group"
+                ? "bg-btn-ctaBg text-btn-ctaText border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
+                : "text-black border border-transparent hover:text-brand-secondary"
+                }`}
+            >
+              Групові заняття
+            </button>
+            <button
+              onClick={() => setBillingPlan("individual")}
+              className={`rounded-lg px-4 py-1.5 text-[11px] font-black uppercase tracking-wider transition-all duration-150 ${billingPlan === "individual"
+                ? "bg-btn-ctaBg text-btn-ctaText border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
+                : "text-black border border-transparent hover:text-brand-secondary"
+                }`}
+            >
+              Індивідуальні
+            </button>
+          </div>
+        </div>
+
+        {/* СІТКА ПЛАШОК */}
+        <div className="flex flex-wrap gap-5 justify-center items-stretch w-full max-w-5xl mx-auto">
+          {pricingData[billingPlan].map((item, index) => (
             <div
               key={index}
-              className={`animate-fade-in-up relative flex flex-col justify-between rounded-3xl bg-white p-6 transition-all duration-300 overflow-hidden border opacity-0 ${
-                plan.hit
-                  ? "border-text-title lg:py-8 shadow-xs ring-1 ring-text-title"
-                  : "border-slate-300/60 hover:border-text-title"
-              }`}
-              style={{ 
-                animationDelay: `${index * 100}ms`,
-                animationFillMode: 'forwards' 
-              }}
+              className="group relative flex items-center justify-between rounded-3xl border-2 border-black bg-[#2572b4] p-4 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] transition-all duration-150 cursor-pointer min-h-[115px] w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] max-w-sm"
             >
-              {/* Хіт-бейдж */}
-              {plan.hit && (
-                <span className="absolute top-3 right-3 rounded-full bg-btn-ctaBg px-2.5 py-0.5 text-[10px] font-black text-btn-ctaText uppercase tracking-wider">
-                  Хіт продажів
+              {/* Ліва текстова частина */}
+              <div className="flex flex-col justify-center flex-1 pr-2 z-10">
+                <span className="text-[11px] font-black tracking-wider text-[#4a2e1b] uppercase mb-1.5 leading-tight">
+                  {item.name}
                 </span>
-              )}
 
-              <div>
-                {/* Назва плану */}
-                <h3 className="text-lg font-black text-text-title uppercase tracking-tight">
-                  {plan.name}
-                </h3>
-                <p className="mt-2 text-xs font-medium leading-relaxed text-text-muted min-h-[40px]">
-                  {plan.desc}
+                {/* Вартість та заняття */}
+                <p className="text-sm font-black tracking-wide text-white whitespace-nowrap">
+                  {item.lessons} - <span className="font-extrabold text-base">{item.price}</span>
                 </p>
 
-                {/* Статична фіксована ціна */}
-                <div className="mt-6 flex items-baseline text-text-title">
-                  <span className="text-4xl font-black tracking-tight">
-                    {plan.price}
-                  </span>
-                  <span className="text-lg font-bold ml-1">грн</span>
-                  <span className="text-xs font-bold text-text-muted ml-2">
-                    / {plan.period}
-                  </span>
+                {/* Альтернативний пакет */}
+                {"altPack" in item && item.altPack && (
+                  <p className="text-sm font-black tracking-wide text-white mt-1 border-t border-white/20 pt-1 whitespace-nowrap">
+                    {item.altPack.lessons} - <span className="font-extrabold text-base">{item.altPack.price}</span>
+                  </p>
+                )}
+              </div>
+
+              {/* Права частина: Будильник та Хвилини */}
+              <div className="flex items-center gap-2 transition-transform duration-150 z-10 flex-shrink-0 min-w-[95px] justify-end pr-1 group-hover:scale-95">
+
+                {/* Великий білий будильник */}
+                <div className="relative w-10 h-10 border-[2.5px] border-white rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="absolute top-1 left-[17px] w-[2.5px] h-3.5 bg-white rounded-full" />
+                  <div className="absolute top-[17px] left-[17px] w-2.5 h-[2.5px] bg-white rounded-full" />
+                  <div className="absolute -top-1 -left-0.5 w-1.5 h-1.5 bg-white rounded-full" />
+                  <div className="absolute -top-1 -right-0.5 w-1.5 h-1.5 bg-white rounded-full" />
                 </div>
 
-                <div className="mt-3 h-px bg-slate-100" />
-
-                {/* Перелік переваг */}
-                <ul className="mt-6 space-y-3">
-                  {plan.features.map((feature, fIndex) => (
-                    <li key={fIndex} className="flex items-start gap-2.5 text-xs font-medium text-text-muted">
-                      <div className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-slate-50 border border-slate-200 text-text-title">
-                        <Check className="h-3 w-3" />
-                      </div>
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
+                {/* Блок хвилин: цифра і слово одного соковитого жовтого кольору */}
+                <div className="flex flex-col items-center justify-center leading-none text-center">
+                  <span className="text-2xl font-black text-[#f7d117] tracking-tighter">
+                    {item.duration}
+                  </span>
+                  <span className="text-[8px] font-black uppercase text-[#f7d117] tracking-wider mt-1">
+                    хвилин
+                  </span>
+                </div>
               </div>
 
-              {/* Кнопка CTA */}
-              <div className="mt-8">
-                <button
-                  className={`w-full rounded-2xl py-3 text-xs font-bold tracking-wider uppercase transition-all duration-300 ${
-                    plan.hit
-                      ? "bg-text-title text-white hover:bg-brand-logoName"
-                      : "bg-slate-50 border border-slate-200 text-text-title hover:bg-text-title hover:text-white"
-                  }`}
-                >
-                  {plan.cta}
-                </button>
+              {/* ВИПРАВЛЕНО: Кнопка отримала інтерактивний ефект 3D-натискання (hover:translate-x і hover:shadow-none) */}
+              <div className="absolute bottom-2 right-2 opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-150 ease-out z-20">
+                <span className="inline-flex items-center gap-1 rounded-xl border border-black bg-[#f7d117] px-2.5 py-1 text-[9px] font-black uppercase text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[1.5px] hover:translate-y-[1.5px] transition-all duration-75 whitespace-nowrap">
+                  Записатись <ArrowRight className="h-2.5 w-2.5 stroke-[3]" />
+                </span>
               </div>
+
             </div>
           ))}
+        </div>
+
+        {/* ПЛАШКА ПРОБНОГО ЗАНЯТТЯ З КРУТИМ 3D-ХОВЕРОМ */}
+        <div className="mt-12 max-w-2xl mx-auto border-2 border-black bg-btn-ctaBg rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] transition-all duration-150 cursor-pointer">
+          <div className="flex items-center gap-3 text-center sm:text-left">
+            <div>
+              <h4 className="text-sm font-black text-black uppercase tracking-tight">
+                Перше пробне заняття — Безкоштовне
+              </h4>
+              <p className="text-[11px] font-bold text-black/70 uppercase tracking-tight mt-0.5">
+                Визначимо поточний рівень знань дитини абсолютно безкоштовно.
+              </p>
+            </div>
+          </div>
+
+          {/* КНОПКА: Колір як у плашок (#2572b4), реагує натисканням ТІЛЬКИ при наведенні суто на неї */}
+          <button className="w-full sm:w-auto rounded-xl border-2 border-black bg-[#2572b4] px-5 py-2 text-xs font-black uppercase tracking-wider text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[1.5px] hover:translate-y-[1.5px] transition-all duration-100 flex-shrink-0">
+            Спробувати
+          </button>
         </div>
 
       </div>
