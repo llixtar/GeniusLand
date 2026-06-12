@@ -7,6 +7,7 @@ import Gallery from "@/components/Gallery";
 import ContactForm from "@/components/ContactForm";
 import Footer from "@/components/Footer";
 import Benefits from "@/components/Benefits";
+import { Reviews } from "@/components/Reviews";
 export default function Home() {
   return (
     /* w-full — на мобільних на весь екран
@@ -34,6 +35,7 @@ export default function Home() {
         <Benefits />
         <Gallery />
         <ContactForm />
+        <Reviews />
         {/* Наступні блоки будуть додаватися сюди */}
       </main>
       <Footer />

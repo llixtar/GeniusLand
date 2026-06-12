@@ -111,7 +111,7 @@ export default function Courses() {
       <div
         key={index}
         onClick={(e) => toggleCard(index, e)}
-        className={`group relative flex flex-col justify-between rounded-3xl border-2 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden cursor-pointer transition-all duration-100 ${isExpanded ? "h-auto" : "h-[200px] sm:h-[240px]"
+        className={`group relative flex flex-col justify-between rounded-3xl border-2 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] overflow-hidden cursor-pointer transition-all duration-100 ${isExpanded ? "h-auto" : "h-[200px] sm:h-[240px]"
           } ${isDesktop && course.isFullWidth ? "sm:col-span-2 lg:col-span-3 lg:max-w-[325px] lg:mx-auto lg:w-full" : ""
           }`}
       >
