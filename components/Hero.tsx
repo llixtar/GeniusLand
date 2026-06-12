@@ -46,12 +46,15 @@ export default function Hero() {
             {/* ГОЛОВНИЙ ЗАГОЛОВОК: Окреме керування розмірами тексту */}
             <h1 className="font-black tracking-tight leading-tight uppercase">
               {/* Назва бренду */}
-              <span className="text-bg-header text-4xl sm:text-5xl md:text-6xl block lg:inline">
+              <span className="text-bg-header text-4xl sm:text-5xl md:text-6xl block">
                 GeniusLand
               </span>
               {/* Решта тексту заголовка */}
-              <span className="text-text-title text-2xl sm:text-3xl md:text-3xl">
-                 — Сучасна онлайн-освіта для майбутніх геніїв
+              <span className="text-text-title text-lg sm:text-3xl md:text-3xl block mt-2 lg:mt-3">
+                Сучасна онлайн-освіта
+              </span>
+              <span className="text-text-title text-lg sm:text-3xl md:text-3xl block">
+                для майбутніх геніїв
               </span>
             </h1>
 
@@ -63,12 +66,12 @@ export default function Hero() {
 
             {/* КНОПКИ ДІЇ: Повний 3D бруталізм з ефектом вдавлювання при кліку */}
             <div className="mt-10 flex flex-col sm:flex-row justify-center lg:justify-start items-center gap-6">
-              
+
               {/* Перша кнопка (Жовта) */}
               <div className="animate-btn-float w-full sm:w-auto flex justify-center">
                 <a
                   href="#contacts"
-                  className="w-full sm:w-auto inline-flex items-center justify-center rounded-2xl bg-btn-ctaBg px-8 py-4 text-base font-black text-btn-ctaText border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all text-center cursor-pointer uppercase tracking-wider"
+                  className="w-full sm:w-auto inline-flex items-center justify-center rounded-2xl bg-btn-ctaBg px-8 py-4 text-base font-black text-btn-ctaText border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] active:scale-[0.97] transition-all duration-75 text-center cursor-pointer uppercase tracking-wider"
                 >
                   Записатись на безкоштовний урок
                 </a>
@@ -78,7 +81,7 @@ export default function Hero() {
               <div className="animate-btn-float w-full sm:w-auto flex justify-center">
                 <a
                   href="#courses"
-                  className="w-full sm:w-auto inline-flex items-center justify-center rounded-2xl bg-brand-secondary px-8 py-4 text-base font-black text-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] transition-all text-center cursor-pointer uppercase tracking-wider"
+                  className="w-full sm:w-auto inline-flex items-center justify-center rounded-2xl bg-brand-secondary px-8 py-4 text-base font-black text-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] active:scale-[0.97] transition-all duration-75 text-center cursor-pointer uppercase tracking-wider"
                 >
                   Переглянути курси
                 </a>
@@ -87,9 +90,9 @@ export default function Hero() {
             </div>
 
             {/* ПЕРЕВАГИ БАТЬКІВ (Замість довгого списку предметів) */}
-            <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-black/5 pt-8 text-left">
+            <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-black/5 pt-8 text-center sm:text-left">
               <div className="p-1">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
                   <Laptop className="h-4 w-4 text-bg-header" />
                   <h4 className="text-xs font-black text-text-title uppercase tracking-tight">Зручний онлайн</h4>
                 </div>
@@ -97,7 +100,7 @@ export default function Hero() {
               </div>
 
               <div className="p-1">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
                   <MapPin className="h-4 w-4 text-brand-secondary" />
                   <h4 className="text-xs font-black text-text-title uppercase tracking-tight">Офлайн у Хотині</h4>
                 </div>
@@ -105,7 +108,7 @@ export default function Hero() {
               </div>
 
               <div className="p-1">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
                   <ShieldCheck className="h-4 w-4 text-brand-logoName stroke-[2.5]" />
                   <h4 className="text-xs font-black text-text-title uppercase tracking-tight">Без ризиків</h4>
                 </div>
@@ -119,7 +122,7 @@ export default function Hero() {
           {/* ========================================================= */}
           <div className="hidden lg:flex lg:col-span-5 w-full justify-center lg:justify-end">
             <div className="relative w-full max-w-[400px] sm:max-w-[420px] lg:max-w-[450px]">
-              
+
               {/* Декоративні рамки заднього плану під слайдером */}
               <div className="absolute inset-0 transform rotate-3 rounded-3xl bg-btn-ctaBg/20 shadow-sm" />
               <div className="absolute inset-0 transform -rotate-2 rounded-3xl bg-bg-header/20 backdrop-blur-xs border border-btn-ctaBg/20" />
@@ -148,7 +151,7 @@ export default function Hero() {
 
                 {/* Навігація слайдера */}
                 <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent pt-12 pb-4 px-4 flex items-center justify-between z-20">
-                  
+
                   {/* Кнопка назад */}
                   <button
                     onClick={prevSlide}

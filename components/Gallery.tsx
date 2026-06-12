@@ -8,32 +8,32 @@ export default function Gallery() {
     {
       url: "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&q=80&w=600&h=450",
       alt: "Заняття в класі",
-      span: "md:col-span-2 md:row-span-2", // Велике головне фото
+      span: "col-span-2 row-span-2", // Велике фото (2х2), але не на всю ширину
     },
     {
       url: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=500&h=500",
       alt: "Вивчення англійської",
-      span: "md:col-span-1 md:row-span-1",
+      span: "col-span-1 row-span-1", // Наймаленька плитка (1х1)
     },
     {
       url: "https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&q=80&w=500&h=650",
       alt: "Творчий процес",
-      span: "md:col-span-1 md:row-span-2", // Вертикальне фото
+      span: "col-span-1 row-span-2", // Вертикальна плитка (1х2)
     },
     {
       url: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=500&h=380",
       alt: "Щасливі діти",
-      span: "md:col-span-1 md:row-span-1",
+      span: "col-span-2 row-span-1", // Горизонтальна плитка (2х1)
     },
     {
       url: "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?auto=format&fit=crop&q=80&w=500&h=380",
       alt: "Розвиток логіки",
-      span: "md:col-span-1 md:row-span-1",
+      span: "col-span-1 row-span-1", // Наймаленька плитка (1х1)
     },
     {
       url: "https://images.unsplash.com/photo-1596495578065-6e0763fa1178?auto=format&fit=crop&q=80&w=600&h=400",
       alt: "Урок математики",
-      span: "md:col-span-2 md:row-span-1", // Широке фото
+      span: "col-span-2 row-span-1", // Горизонтальна плитка (2х1)
     },
   ];
 
@@ -53,7 +53,7 @@ export default function Gallery() {
         </div>
 
         {/* АСИМЕТРИЧНА МОЗАЇКА (Grid Masonry) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-6xl mx-auto auto-rows-[220px]">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 max-w-6xl mx-auto auto-rows-[90px] min-[400px]:auto-rows-[110px] sm:auto-rows-[200px] md:auto-rows-[220px]">
           {photos.map((photo, index) => (
             <div
               key={index}

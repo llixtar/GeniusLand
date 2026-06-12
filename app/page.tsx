@@ -6,7 +6,7 @@ import Pricing from "@/components/Pricing";
 import Gallery from "@/components/Gallery";
 import ContactForm from "@/components/ContactForm";
 import Footer from "@/components/Footer";
-
+import Benefits from "@/components/Benefits";
 export default function Home() {
   return (
     /* w-full — на мобільних на весь екран
@@ -29,8 +29,9 @@ export default function Home() {
       <main className="flex-1">
         <Hero />
         <Courses />
-        <Teachers />
         <Pricing />
+        <Teachers />
+        <Benefits />
         <Gallery />
         <ContactForm />
         {/* Наступні блоки будуть додаватися сюди */}
