@@ -105,7 +105,7 @@ export default function Pricing() {
       <div
         key={index}
         onClick={clickHandler}
-        className={`group relative flex items-center justify-between rounded-3xl border-2 border-black bg-[#2572b4] p-4 text-white min-h-[115px] cursor-pointer transition-all duration-150 ${
+        className={`group relative flex items-center justify-between rounded-3xl border-2 border-black bg-[#2572b4] p-3.5 sm:p-4 text-white min-h-[115px] cursor-pointer transition-all duration-150 ${
           isDesktop
             ? "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] max-w-sm"
             : isActive
@@ -114,40 +114,40 @@ export default function Pricing() {
         }`}
       >
         {/* Ліва текстова частина */}
-        <div className="flex flex-col justify-center flex-1 pr-2 z-10 select-none">
-          <span className="text-[11px] font-black tracking-wider text-[#4a2e1b] uppercase mb-1.5 leading-tight">
+        <div className="flex flex-col justify-center flex-1 pr-1.5 sm:pr-2 z-10 select-none">
+          <span className="text-[10px] sm:text-[11px] font-black tracking-wider text-[#4a2e1b] uppercase mb-1 sm:mb-1.5 leading-tight">
             {item.name}
           </span>
 
           {/* Вартість та заняття */}
-          <p className="text-sm font-black tracking-wide text-white whitespace-nowrap">
-            {item.lessons} - <span className="font-extrabold text-base">{item.price}</span>
+          <p className="text-xs sm:text-sm font-black tracking-wide text-white whitespace-nowrap">
+            {item.lessons} - <span className="font-extrabold text-sm sm:text-base">{item.price}</span>
           </p>
 
           {/* Альтернативний пакет */}
           {"altPack" in item && item.altPack && (
-            <p className="text-sm font-black tracking-wide text-white mt-1 border-t border-white/20 pt-1 whitespace-nowrap">
-              {item.altPack.lessons} - <span className="font-extrabold text-base">{item.altPack.price}</span>
+            <p className="text-xs sm:text-sm font-black tracking-wide text-white mt-1 border-t border-white/20 pt-1 whitespace-nowrap">
+              {item.altPack.lessons} - <span className="font-extrabold text-sm sm:text-base">{item.altPack.price}</span>
             </p>
           )}
         </div>
 
         {/* Права частина: Будильник та Хвилини */}
-        <div className="flex items-center gap-2 transition-transform duration-150 z-10 flex-shrink-0 min-w-[95px] justify-end pr-1 group-hover:scale-95">
+        <div className="flex items-center gap-1.5 sm:gap-2 transition-transform duration-150 z-10 flex-shrink-0 min-w-[76px] sm:min-w-[95px] justify-end pr-0.5 sm:pr-1 group-hover:scale-95">
           {/* Великий білий будильник */}
-          <div className="relative w-10 h-10 border-[2.5px] border-white rounded-full flex items-center justify-center flex-shrink-0">
-            <div className="absolute top-1 left-[17px] w-[2.5px] h-3.5 bg-white rounded-full" />
-            <div className="absolute top-[17px] left-[17px] w-2.5 h-[2.5px] bg-white rounded-full" />
-            <div className="absolute -top-1 -left-0.5 w-1.5 h-1.5 bg-white rounded-full" />
-            <div className="absolute -top-1 -right-0.5 w-1.5 h-1.5 bg-white rounded-full" />
+          <div className="relative w-8 h-8 sm:w-10 sm:h-10 border-[2px] sm:border-[2.5px] border-white rounded-full flex items-center justify-center flex-shrink-0">
+            <div className="absolute top-0.5 sm:top-1 left-[13px] sm:left-[17px] w-[1.5px] sm:w-[2.5px] h-2.5 sm:h-3.5 bg-white rounded-full" />
+            <div className="absolute top-[13px] sm:top-[17px] left-[13px] sm:left-[17px] w-1.5 sm:w-2.5 h-[1.5px] sm:h-[2.5px] bg-white rounded-full" />
+            <div className="absolute -top-0.5 sm:-top-1 -left-0.5 w-1 sm:w-1.5 h-1 sm:h-1.5 bg-white rounded-full" />
+            <div className="absolute -top-0.5 sm:-top-1 -right-0.5 w-1 sm:w-1.5 h-1 sm:h-1.5 bg-white rounded-full" />
           </div>
 
           {/* Блок хвилин: цифра і слово одного соковитого жовтого кольору */}
           <div className="flex flex-col items-center justify-center leading-none text-center">
-            <span className="text-2xl font-black text-[#f7d117] tracking-tighter">
+            <span className="text-xl sm:text-2xl font-black text-[#f7d117] tracking-tighter">
               {item.duration}
             </span>
-            <span className="text-[8px] font-black uppercase text-[#f7d117] tracking-wider mt-1">
+            <span className="text-[7px] sm:text-[8px] font-black uppercase text-[#f7d117] tracking-wider mt-0.5 sm:mt-1">
               хвилин
             </span>
           </div>
