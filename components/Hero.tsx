@@ -37,9 +37,9 @@ export default function Hero() {
           {/* ========================================================= */}
           <div className="text-center lg:col-span-7 lg:text-left flex flex-col justify-center">
 
-            {/* ГАЧОК: Статичний стікер у кольорі хедера з чіткою чорною 3D-тінню */}
-            <div className="inline-flex items-center gap-2 bg-bg-header text-white text-[12px] font-black px-4 py-2 rounded-xl uppercase tracking-wider mx-auto lg:mx-0 w-fit mb-6 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-              <Tag className="h-4 w-4 -rotate-90 stroke-[3] text-brand-secondary" />
+            {/* ГАЧОК: Статичний стікер у кольорі фону сайту з чіткою чорною 3D-тінню */}
+            <div className="inline-flex items-center gap-2 bg-bg-main text-black text-[12px] font-black px-4 py-2 rounded-xl uppercase tracking-wider mx-auto lg:mx-0 w-fit mb-6 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+              <Tag className="h-4 w-4 -rotate-90 stroke-[3] text-bg-header" />
               <span>Перше пробне заняття — безкоштовно</span>
             </div>
 

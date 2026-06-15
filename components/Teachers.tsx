@@ -1,65 +1,101 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { GraduationCap, ChevronLeft, ChevronRight } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+
+interface DBTeacher {
+  id?: string;
+  name: string;
+  role: string;
+  image: string;
+  experience: string;
+  sub_experience?: string | null;
+  quote: string;
+  bullets: string[];
+  sort_order?: number;
+}
+
+const DEFAULT_TEACHERS: DBTeacher[] = [
+  {
+    name: "Гайсенюк Марина",
+    role: "Засновниця GeniusLand",
+    image: "/teachers/maryna.jpg",
+    experience: "4 роки роботи з дітьми",
+    sub_experience: null,
+    quote: "Вірить, що навчання може бути в радість, а не через змушування..",
+    bullets: [
+      "Ментальна арифметика",
+      "Швидкочитання",
+      "Підготовка до школи",
+      "Репетиторство"
+    ]
+  },
+  {
+    name: "Чопчик Тетяна",
+    role: "Логопед центру",
+    image: "/teachers/tetiana.jpg",
+    experience: "8 років роботи з дітьми дошкільного та молодшого шкільного віку",
+    sub_experience: "Профільна освіта з логопедії",
+    quote: "Вірить, що кожна дитина може заговорити впевнено",
+    bullets: [
+      "Сучасні корекційні методики",
+      "Індивідуальний підхід",
+      "Формування правильної вимови"
+    ]
+  },
+  {
+    name: "Перепелюк Анна",
+    role: "Викладач англійської мови",
+    image: "/teachers/anna.jpg",
+    experience: "4 роки досвіду роботи з дітьми 5-15 років",
+    sub_experience: null,
+    quote: "Вірить, що навчання може бути в легкість та задоволення",
+    bullets: [
+      "Вивчення нових слів",
+      "Діти починають вільно говорити",
+      "Навчання через ігри та інтерактиви"
+    ]
+  },
+  {
+    name: "Алевтина",
+    role: "Викладач англійської мови",
+    image: "/teachers/alevtina.jpg",
+    experience: "2 роки досвіду роботи",
+    sub_experience: null,
+    quote: "Сприяє розвитку впевненості у спілкуванні англійською.",
+    bullets: [
+      "Вивчення мови легко, цікаво та без страху помилок",
+      "Поєднує інтерактивні завдання, ігрові елементи та комунікативний підхід",
+      "Працює з урахуванням віку, рівня знань та потреб кожного учня"
+    ]
+  },
+];
 
 export default function Teachers() {
+  const [teachers, setTeachers] = useState<DBTeacher[]>(DEFAULT_TEACHERS);
   const [activeSlide, setActiveSlide] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const teachersData = [
-    {
-      name: "Гайсенюк Марина",
-      role: "Засновниця GaniusLand",
-      image: "/teachers/maryna.jpg",
-      experience: "4 роки роботи з дітьми",
-      quote: "Вірить, що навчання може бути в радість, а не через змушування..",
-      bullets: [
-        "Ментальна арифметика",
-        "Швидкочитання",
-        "Підготовка до школи",
-        "Репетиторство"
-      ]
-    },
-    {
-      name: "Чопчик Тетяна",
-      role: "Логопед центру",
-      image: "/teachers/tetiana.jpg",
-      experience: "8 років роботи з дітьми дошкільного та молодшого шкільного віку",
-      subExperience: "Профільна освіта з логопедії",
-      quote: "Вірить, що кожна дитина може заговорити впевнено",
-      bullets: [
-        "Сучасні корекційні методики",
-        "Індивідуальний підхід",
-        "Формування правильної вимови"
-      ]
-    },
-    {
-      name: "Перепелюк Анна",
-      role: "Викладач англійської мови",
-      image: "/teachers/anna.jpg",
-      experience: "4 роки досвіду роботи з дітьми 5-15 років",
-      quote: "Вірить, що навчання може бути в легкість та задоволення",
-      bullets: [
-        "Вивчення нових слів",
-        "Діти починають вільно говорити",
-        "Навчання через ігри та інтерактиви"
-      ]
-    },
-    {
-      name: "Алевтина",
-      role: "Викладач англійської мови",
-      image: "/teachers/alevtina.jpg",
-      experience: "2 роки досвіду роботи",
-      quote: "Сприяє розвитку впевненості у спілкуванні англійською.",
-      bullets: [
-        "Вивчення мови легко, цікаво та без страху помилок",
-        "Поєднує інтерактивні завдання, ігрові елементи та комунікативний підхід",
-        "Працює з урахуванням віку, рівня знань та потреб кожного учня"
-      ]
-    },
-  ];
+  useEffect(() => {
+    async function fetchTeachers() {
+      try {
+        const { data, error } = await supabase
+          .from("teachers")
+          .select("*")
+          .order("sort_order", { ascending: true });
+
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setTeachers(data);
+        }
+      } catch (err) {
+        console.error("Error fetching teachers:", err);
+      }
+    }
+    fetchTeachers();
+  }, []);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const scrollLeft = e.currentTarget.scrollLeft;
@@ -77,10 +113,10 @@ export default function Teachers() {
     }
   };
 
-  const renderCard = (teacher: typeof teachersData[0], index: number, isDesktop = false) => {
+  const renderCard = (teacher: DBTeacher, index: number, isDesktop = false) => {
     return (
       <div
-        key={index}
+        key={teacher.id || index}
         className={
           isDesktop
             ? "group relative flex flex-col justify-between rounded-3xl border border-black bg-white p-5 shadow-sm hover:shadow-md transition-all duration-300 w-full"
@@ -131,9 +167,9 @@ export default function Teachers() {
               <span className="leading-tight">{teacher.experience}</span>
             </div>
             
-            {teacher.subExperience && (
+            {teacher.sub_experience && (
               <p className="text-[9px] text-text-muted mt-1.5 font-bold uppercase tracking-tight text-center leading-tight">
-                {teacher.subExperience}
+                {teacher.sub_experience}
               </p>
             )}
             
@@ -146,7 +182,7 @@ export default function Teachers() {
               Спеціалізація:
             </p>
             <ul className="space-y-1 text-center">
-              {teacher.bullets.map((bullet, idx) => (
+              {teacher.bullets && teacher.bullets.map((bullet, idx) => (
                 <li key={idx} className="text-xs font-bold text-text-body leading-tight">
                   {bullet}
                 </li>
@@ -195,7 +231,7 @@ export default function Teachers() {
           )}
 
           {/* Права стрілка */}
-          {activeSlide < teachersData.length - 1 && (
+          {activeSlide < teachers.length - 1 && (
             <button
               onClick={() => scroll("right")}
               className="absolute right-1.5 top-[50%] -translate-y-1/2 z-30 flex items-center justify-center text-black/35 active:text-black/75 active:scale-75 transition-all cursor-pointer"
@@ -211,9 +247,9 @@ export default function Teachers() {
             className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none pb-6"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {teachersData.map((teacher, idx) => (
+            {teachers.map((teacher, idx) => (
               <div
-                key={idx}
+                key={teacher.id || idx}
                 className="w-full flex-shrink-0 px-12 snap-center"
               >
                 {renderCard(teacher, idx, false)}
@@ -223,7 +259,7 @@ export default function Teachers() {
 
           {/* Точки пагінації */}
           <div className="flex justify-center gap-2 mt-2">
-            {Array.from({ length: teachersData.length }).map((_, idx) => (
+            {Array.from({ length: teachers.length }).map((_, idx) => (
               <div
                 key={idx}
                 className={`h-2.5 rounded-full border-2 border-black transition-all duration-150 ${activeSlide === idx
@@ -237,7 +273,7 @@ export default function Teachers() {
 
         {/* ДЕСКТОПНА СІТКА */}
         <div className="hidden sm:grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 items-stretch justify-center w-full">
-          {teachersData.map((teacher, index) => renderCard(teacher, index, true))}
+          {teachers.map((teacher, index) => renderCard(teacher, index, true))}
         </div>
 
       </div>

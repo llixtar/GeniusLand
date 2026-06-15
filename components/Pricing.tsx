@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Sparkles, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 interface PricingItem {
   name: string;
@@ -32,7 +33,10 @@ export default function Pricing() {
   const [activeSlide, setActiveSlide] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const pricingData = {
+  const [pricing, setPricing] = useState<{
+    group: PricingItem[];
+    individual: PricingItem[];
+  }>({
     group: [
       { name: "РЕПЕТИТОРСТВО", lessons: "8 занять", price: "1620 грн", duration: "55" },
       { name: "АНГЛІЙСЬКА МОВА", lessons: "8 занять", price: "1590 грн", duration: "55" },
@@ -50,9 +54,55 @@ export default function Pricing() {
       { name: "ШВИДКОЧИТАННЯ", lessons: "4 заняття", price: "1500 грн", duration: "40", altPack: { lessons: "8 занять", price: "3000 грн" } },
       { name: "ПІДГОТОВКА ДО ШКОЛИ", lessons: "8 занять", price: "2500 грн", duration: "40" },
     ],
-  };
+  });
 
-  const currentPlanCards = pricingData[billingPlan];
+  useEffect(() => {
+    const fetchPricing = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("pricing")
+          .select("*")
+          .order("sort_order", { ascending: true });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const group: PricingItem[] = [];
+          const individual: PricingItem[] = [];
+
+          data.forEach((item: any) => {
+            const pricingItem: PricingItem = {
+              name: item.name,
+              lessons: item.lessons,
+              price: item.price,
+              duration: item.duration,
+            };
+            if (item.alt_lessons && item.alt_price) {
+              pricingItem.altPack = {
+                lessons: item.alt_lessons,
+                price: item.alt_price,
+              };
+            }
+
+            if (item.billing_plan === "group") {
+              group.push(pricingItem);
+            } else if (item.billing_plan === "individual") {
+              individual.push(pricingItem);
+            }
+          });
+
+          if (group.length > 0 || individual.length > 0) {
+            setPricing({ group, individual });
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching pricing from Supabase:", err);
+      }
+    };
+    fetchPricing();
+  }, []);
+
+  const currentPlanCards = pricing[billingPlan];
   const cardsOnSlide = currentPlanCards.slice(activeSlide * 3, activeSlide * 3 + 3).length;
 
   const handlePlanChange = (plan: "group" | "individual") => {

@@ -10,7 +10,10 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
+    "@supabase/supabase-js": "^2.108.2",
     "clsx": "^2.1.1",
+    "embla-carousel-auto-height": "^8.6.0",
+    "embla-carousel-fade": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
     "lucide-react": "^1.17.0",
     "next": "16.2.9",

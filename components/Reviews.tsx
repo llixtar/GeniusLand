@@ -3,13 +3,16 @@
 import React, { useState, useEffect, useCallback } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import Fade from "embla-carousel-fade";
+import AutoHeight from "embla-carousel-auto-height";
 
 export function Reviews() {
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
     align: "start",
     slidesToScroll: 1,
-  });
+  }, [Fade(), AutoHeight()]);
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -36,7 +39,107 @@ export function Reviews() {
       author: "Мама Аліси",
       text: "Алісі заняття сподобалось, сказала, що було цікаво 😎 Будемо продовжувати відвідувати заняття.",
     },
+    {
+      author: "Мама дитини",
+      text: "Добрий день, дякую, дитині все сподобалось.",
+    },
+    {
+      author: "Мама учениці",
+      text: "Доброго дня, так все дуже сподобалось і вона була задоволена. Гарно дякую вам за це. Ми б хотіли далі займатись з вами, скажіть будь ласка як і куди здійснити оплату?",
+    },
+    {
+      author: "Мама Соломійки",
+      text: "Доброго дня, хотіла подякувати за терпіння та професійність. Соломійка з радістю йде на кожне заняття, бо вони проходять у цікавій ігровій формі. Для мене було важливо, щоб встановили контакт із нею — і вам це вдалося на 100%.",
+    },
+    {
+      author: "Мама дитини",
+      text: "Ми дякуємо логопеду Тетяні Чопчик! Дитина із задоволенням відвідує заняття завдяки кваліфікованим діям спеціаліста. Бачимо позитивний результат.",
+    },
+    {
+      author: "Мама сина",
+      text: "Щиро дякуємо Вам за професіоналізм та підхід до дитини. Син із великим задоволенням відвідує заняття, які завжди нові та дуже цікаві, а саме в ігровій формі. Результат помітний вже через кілька занять. Ви чудовий спеціаліст.",
+    },
+    {
+      author: "Мама донечки",
+      text: "Доброго дня! Моя донечка займається в \"GeniusLand\" від самого відкриття. Відвідує заняття з англійської мови. Я дуже задоволена, заняття ідуть на користь, дитина з нетерпінням чекає, виконує самостійно домашнє завдання без нагадувань. Анна Сергіївна - то любов з першого заняття, вона розуміє діток, вміє знайти підхід. Ми дуже задоволені🥰",
+    },
+    {
+      author: "Мама сина",
+      text: "Мій син із задоволенням відвідує школу ментальної арифметики. Викладач Марина дуже приємна, уважна та вміє зацікавити дітей навчанням. Я бачу гарні результати й прогрес у сина. Дуже задоволена🌸",
+    },
+    {
+      author: "Мама Максима і Дані",
+      text: "Доброго вечора! Дітям сподобалось, вони задоволені. На уроці була довірлива атмосфера, було цікаво. Максим і Даня будуть продовжувати навчання.",
+    },
+    {
+      author: "Мама Софії",
+      text: "Доброго вечора 🌹 Софія просто в захваті. Ми продовжуємо навчання.",
+    },
+    {
+      author: "Мама Тимофія",
+      text: "Доброго вечора! Тимофій також у захваті від уроку. Продовжуємо ✔️😉",
+    },
+    {
+      author: "Мама донечки",
+      text: "Ваші заняття чудові, вони дуже подобаються моїй донечці, і кожного разу вона з нетерпінням чекає наступного уроку. Особливо хочу відзначити вчительку - вона чудово вміє тримати увагу дитини навіть у форматі онлайн. Заняття проходять цікаво, різноманітно, і у форматі гри, моя дитина активно залучена в процес і отримує задоволення від навчання. Дякую за такий чудовий підхід до своєї справи.❤️",
+    },
+    {
+      author: "Мама сина",
+      text: "Доброго дня. Вчителька хороша, позитивна, пояснює доступно. Сину подобається. Про результат говорити ще рано, адже займаємось лише місяць, хоч за місяць він вивчив більше, ніж за рік. Рухаємось далі 😉",
+    },
+    {
+      author: "Мама дитини",
+      text: "Щиро дякуємо за заняття! Найголовніший показник для мене — те, що дитина біжить на уроки з задоволенням і її не потрібно змушувати. Вчителю вдалося знайти підхід і зацікавити, англійська тепер у нас — улюблений предмет. Дуже рада, що ми обрали саме вас!",
+    },
   ];
+
+  const [reviewsList, setReviewsList] = useState<any[]>(reviewsData);
+  const [maxHeight, setMaxHeight] = useState<number | null>(null);
+
+  const calculateHeights = useCallback(() => {
+    setMaxHeight(null);
+    requestAnimationFrame(() => {
+      const slideElements = document.querySelectorAll(".review-card-bubble");
+      let maxH = 0;
+      slideElements.forEach((el) => {
+        const htmlEl = el as HTMLElement;
+        const originalHeight = htmlEl.style.height;
+        htmlEl.style.height = "auto";
+        const h = htmlEl.offsetHeight;
+        htmlEl.style.height = originalHeight;
+        if (h > maxH) maxH = h;
+      });
+      if (maxH > 0) {
+        setMaxHeight(maxH);
+      }
+    });
+  }, [reviewsList]);
+
+  useEffect(() => {
+    if (reviewsList.length === 0) return;
+    calculateHeights();
+    window.addEventListener("resize", calculateHeights);
+    return () => window.removeEventListener("resize", calculateHeights);
+  }, [reviewsList, calculateHeights]);
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("reviews")
+          .select("*")
+          .order("created_at", { ascending: true });
+
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setReviewsList(data);
+        }
+      } catch (err) {
+        console.error("Error fetching reviews from Supabase:", err);
+      }
+    };
+    fetchReviews();
+  }, []);
 
   const getAuthorIcon = (author: string, index: number) => {
     const lower = author.toLowerCase();
@@ -119,7 +222,11 @@ export function Reviews() {
         </div>
 
         {/* НАВІГАЦІЯ ПО БОКАХ ВІД ЦИТАТ */}
-        <div className="relative flex items-center justify-center w-full px-10 sm:px-24 lg:px-24">
+        <div 
+          className="relative flex items-center justify-center w-full max-w-2xl mx-auto px-10 sm:px-16"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
           
           {/* Ліва мобільна стрілка */}
           <button
@@ -133,7 +240,7 @@ export function Reviews() {
           {/* Ліва десктопна кнопка */}
           <button
             onClick={scrollPrev}
-            className="absolute left-2 sm:left-4 z-30 hidden sm:flex h-11 w-11 items-center justify-center rounded-xl border-2 border-black bg-white/90 backdrop-blur-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-slate-800 hover:bg-btn-ctaBg hover:text-black hover:border-black transition-all active:scale-95 cursor-pointer"
+            className="absolute left-2 sm:left-0 top-1/2 -translate-y-1/2 z-30 hidden sm:flex h-11 w-11 items-center justify-center rounded-xl border-2 border-black bg-white/90 backdrop-blur-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-slate-800 hover:bg-btn-ctaBg hover:text-black hover:border-black transition-all active:scale-95 cursor-pointer"
             aria-label="Попередній відгук"
           >
             <ChevronLeft className="h-5 w-5 stroke-[2.5]" />
@@ -141,16 +248,15 @@ export function Reviews() {
 
           {/* Embla Viewport */}
           <div 
+            key={reviewsList.length}
             className="overflow-hidden w-full pb-8" 
             ref={emblaRef}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
           >
             <div className="flex">
-              {reviewsData.map((review, index) => (
+              {reviewsList.map((review, index) => (
                 <div
                   key={index}
-                  className="flex-[0_0_100%] sm:flex-[0_0_50%] lg:flex-[0_0_33.333333%] min-w-0 px-6 flex flex-col"
+                  className="flex-[0_0_100%] min-w-0 px-6 flex flex-col"
                 >
                   {/* Нове графічне рішення: Аватар з ім'ям */}
                   <div className="flex items-center gap-3.5 mb-5 ml-1 select-none">
@@ -174,7 +280,10 @@ export function Reviews() {
                   </div>
 
                   {/* 2. ПОВЕРНУТО: Попередня оригінальна хмаринка прямої мови */}
-                  <div className="relative rounded-2xl border-2 border-black bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] transition-all duration-150 min-h-[120px] flex items-center">
+                  <div 
+                    className="review-card-bubble relative rounded-2xl border-2 border-black bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center select-none w-full"
+                    style={maxHeight ? { height: `${maxHeight}px` } : undefined}
+                  >
                     <p className="text-xs sm:text-sm text-text-body leading-relaxed font-bold italic">
                       «{review.text}»
                     </p>
@@ -199,16 +308,16 @@ export function Reviews() {
           {/* Права десктопна кнопка */}
           <button
             onClick={scrollNext}
-            className="absolute right-2 sm:right-4 z-30 hidden sm:flex h-11 w-11 items-center justify-center rounded-xl border-2 border-black bg-white/90 backdrop-blur-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-slate-800 hover:bg-btn-ctaBg hover:text-black hover:border-black transition-all active:scale-95 cursor-pointer"
+            className="absolute right-2 sm:right-0 top-1/2 -translate-y-1/2 z-30 hidden sm:flex h-11 w-11 items-center justify-center rounded-xl border-2 border-black bg-white/90 backdrop-blur-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-slate-800 hover:bg-btn-ctaBg hover:text-black hover:border-black transition-all active:scale-95 cursor-pointer"
             aria-label="Наступний відгук"
           >
             <ChevronRight className="h-5 w-5 stroke-[2.5]" />
           </button>
         </div>
 
-        {/* Точки пагінації для мобілок */}
-        <div className="flex justify-center gap-2 mt-4 sm:hidden">
-          {reviewsData.map((_, idx) => (
+        {/* Точки пагінації */}
+        <div className="flex justify-center gap-2 mt-4 flex-wrap px-4">
+          {reviewsList.map((_, idx) => (
             <button
               key={idx}
               onClick={() => scrollTo(idx)}

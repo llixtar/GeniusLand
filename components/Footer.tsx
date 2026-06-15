@@ -1,7 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const router = useRouter();
 
   return (
     /* bg-bg-header — фарбуємо в колір хедера, lg:rounded-b-2xl — красиво закриваємо кути планшета */
@@ -11,7 +14,10 @@ export default function Footer() {
           
           {/* Назва та копірайт */}
           <div>
-            <span className="text-sm font-black tracking-tight uppercase color-brand-logoName">
+            <span 
+              onClick={() => router.push("/admin")}
+              className="text-sm font-black tracking-tight uppercase color-brand-logoName cursor-pointer select-none active:scale-95 transition-transform inline-block"
+            >
               GeniusLand
             </span>
             <p className="mt-0.5 text-[11px] font-medium text-slate-300">
@@ -28,4 +34,4 @@ export default function Footer() {
       </div>
     </footer>
   );
-}
+}

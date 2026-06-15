@@ -1,13 +1,139 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { ArrowRight, Clock, Calendar, CheckCircle2, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+
+const staticCoursesList = [
+  {
+    title: "Підготовка до школи",
+    age: "5+",
+    info: "2 рази \\ тиждень",
+    online: "+ онлайн заняття",
+    groupDuration: "55 хвилин — група",
+    indivDuration: "40 хвилин — індивідуально",
+    points: ["Читання", "Письмо", "Математика", "Адаптація до шкільної атмосфери", "Логіка"],
+    bgImage: "/courses-bg/school-prep.png",
+  },
+  {
+    title: "Англійська мова",
+    age: "4+",
+    info: "2 рази \\ тиждень",
+    online: "+ онлайн заняття",
+    groupDuration: "55 хвилин — група",
+    indivDuration: "40 хвилин — індивідуально",
+    points: ["Словниковий запас", "Правильна вимова", "Сприйняття мови на слух", "Пам'ять та увага", "Впевненість у спілкуванні"],
+    bgImage: "/courses-bg/english.png",
+  },
+  {
+    title: "Репетиторство",
+    subtitle: "Основні предмети 1–4 клас",
+    age: "6-10",
+    info: "2 рази \\ тиждень",
+    online: "+ онлайн заняття",
+    groupDuration: "55 хвилин — група",
+    indivDuration: "40 хвилин — індивідуально",
+    points: ["Додавання і віднімання", "Множення та ділення", "Розв'язування задач", "Логічні вправи", "Робота з числами та прикладами"],
+    bgImage: "/courses-bg/tutoring.png",
+  },
+  {
+    title: "Таблиця множення",
+    age: "7-8",
+    info: "2 рази \\ тиждень",
+    online: "+ онлайн заняття",
+    groupDuration: "55 хвилин — група",
+    indivDuration: "40 хвилин — індивідуально",
+    points: ["Пояснюємо через прості приклади", "Використовуємо наочні матеріали", "Вивчаємо поступово", "Тренуємо швидкість через ігри", "Картки, змагання та інтерактив"],
+    bgImage: "/courses-bg/multiplication.png",
+  },
+  {
+    title: "Швидкочитання",
+    age: "6-12",
+    info: "2 рази \\ тиждень",
+    online: "+ онлайн заняття",
+    groupDuration: "55 хвилин — група",
+    indivDuration: "40 хвилин — індивідуально",
+    points: ["Техніка читання", "Швидкість", "Увага", "Розуміння тексту"],
+    bgImage: "/courses-bg/speed-reading.png",
+  },
+  {
+    title: "Ментальна арифметика",
+    age: "5-12",
+    info: "2 рази \\ тиждень",
+    online: "+ онлайн заняття",
+    groupDuration: "55 хвилин — група",
+    indivDuration: "40 хвилин — індивідуально",
+    points: ["Розвиток мозку", "Швидкість мислення", "Увага та пам'ять", "Уява", "Швидкісний рахунок"],
+    bgImage: "/courses-bg/mental-math.png",
+  },
+  {
+    title: "Логопед",
+    age: "4+",
+    info: "2 рази \\ тиждень",
+    online: "Індивідуальні заняття",
+    groupDuration: "",
+    indivDuration: "30 хвилин — індивідуально",
+    points: ["Правильна вимова звуків", "Постановка та автоматизація", "Розвиток мовного дихання", "Збагачення словникового запасу", "Розвиток артикуляційного апарату"],
+    bgImage: "/courses-bg/speech-therapy.png",
+    isFullWidth: true,
+  },
+];
+
+interface CourseItem {
+  id?: string;
+  title: string;
+  subtitle?: string | null;
+  age: string;
+  info: string;
+  online: string;
+  groupDuration: string;
+  indivDuration: string;
+  points: string[];
+  bgImage: string;
+  isFullWidth?: boolean;
+}
 
 export default function Courses() {
+  const [coursesList, setCoursesList] = useState<CourseItem[]>(staticCoursesList);
+  const [loading, setLoading] = useState(true);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    async function fetchCourses() {
+      try {
+        const { data, error } = await supabase
+          .from("courses")
+          .select("*")
+          .order("sort_order", { ascending: true });
+        
+        if (error) throw error;
+        if (data && data.length > 0) {
+          const mapped = data.map(item => ({
+            id: item.id,
+            title: item.title,
+            subtitle: item.subtitle,
+            age: item.age,
+            info: item.info,
+            online: item.online,
+            groupDuration: item.group_duration || "",
+            indivDuration: item.indiv_duration,
+            points: item.points || [],
+            bgImage: item.bg_image,
+            isFullWidth: item.is_full_width || false,
+          }));
+          setCoursesList(mapped);
+        }
+      } catch (err) {
+        console.error("Error fetching courses from DB:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchCourses();
+  }, []);
 
   const toggleCard = (index: number, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -29,81 +155,6 @@ export default function Courses() {
       container.scrollBy({ left: scrollAmount, behavior: "smooth" });
     }
   };
-
-  const coursesList = [
-    {
-      title: "Підготовка до школи",
-      age: "5+",
-      info: "2 рази \\ тиждень",
-      online: "+ онлайн заняття",
-      groupDuration: "55 хвилин — група",
-      indivDuration: "40 хвилин — індивідуально",
-      points: ["Читання", "Письмо", "Математика", "Адаптація до шкільної атмосфери", "Логіка"],
-      bgImage: "/courses-bg/school-prep.png",
-    },
-    {
-      title: "Англійська мова",
-      age: "4+",
-      info: "2 рази \\ тиждень",
-      online: "+ онлайн заняття",
-      groupDuration: "55 хвилин — група",
-      indivDuration: "40 хвилин — індивідуально",
-      points: ["Словниковий запас", "Правильна вимова", "Сприйняття мови на слух", "Пам'ять та увага", "Впевненість у спілкуванні"],
-      bgImage: "/courses-bg/english.png",
-    },
-    {
-      title: "Репетиторство",
-      subtitle: "Основні предмети 1–4 клас",
-      age: "6-10",
-      info: "2 рази \\ тиждень",
-      online: "+ онлайн заняття",
-      groupDuration: "55 хвилин — група",
-      indivDuration: "40 хвилин — індивідуально",
-      points: ["Додавання і віднімання", "Множення та ділення", "Розв'язування задач", "Логічні вправи", "Робота з числами та прикладами"],
-      bgImage: "/courses-bg/tutoring.png",
-    },
-    {
-      title: "Таблиця множення",
-      age: "7-8",
-      info: "2 рази \\ тиждень",
-      online: "+ онлайн заняття",
-      groupDuration: "55 хвилин — група",
-      indivDuration: "40 хвилин — індивідуально",
-      points: ["Пояснюємо через прості приклади", "Використовуємо наочні матеріали", "Вивчаємо поступово", "Тренуємо швидкість через ігри", "Картки, змагання та інтерактив"],
-      bgImage: "/courses-bg/multiplication.png",
-    },
-    {
-      title: "Швидкочитання",
-      age: "6-12",
-      info: "2 рази \\ тиждень",
-      online: "+ онлайн заняття",
-      groupDuration: "55 хвилин — група",
-      indivDuration: "40 хвилин — індивідуально",
-      points: ["Техніка читання", "Швидкість", "Увага", "Розуміння тексту"],
-      bgImage: "/courses-bg/speed-reading.png",
-    },
-    {
-      title: "Ментальна арифметика",
-      age: "5-12",
-      info: "2 рази \\ тиждень",
-      online: "+ онлайн заняття",
-      groupDuration: "55 хвилин — група",
-      indivDuration: "40 хвилин — індивідуально",
-      points: ["Розвиток мозку", "Швидкість мислення", "Увага та пам'ять", "Уява", "Швидкісний рахунок"],
-      bgImage: "/courses-bg/mental-math.png",
-    },
-    {
-      title: "Логопед",
-      age: "4+",
-      info: "2 рази \\ тиждень",
-      online: "Індивідуальні заняття",
-      groupDuration: "",
-      indivDuration: "30 хвилин — індивідуально",
-      points: ["Правильна вимова звуків", "Постановка та автоматизація", "Розвиток мовного дихання", "Збагачення словникового запасу", "Розвиток артикуляційного апарату"],
-      bgImage: "/courses-bg/speech-therapy.png",
-      isFullWidth: true,
-    },
-  ];
 
   const renderCard = (course: typeof coursesList[0], index: number, isDesktop = false) => {
     const isExpanded = expandedIndex === index;

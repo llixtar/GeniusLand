@@ -1,12 +1,38 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { articles } from "@/data/articles";
-import { Calendar, ArrowRight, ChevronLeft } from "lucide-react";
+import { articles as fallbackArticles } from "@/data/articles";
+import { Calendar, ArrowRight, ChevronLeft, Loader2 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { supabase } from "@/lib/supabase";
 
 export default function BlogPage() {
+  const [articles, setArticles] = useState<any[]>(fallbackArticles);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("articles")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setArticles(data);
+        }
+      } catch (err) {
+        console.error("Error fetching articles:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchArticles();
+  }, []);
+
   return (
     <div className="min-h-screen w-full lg:max-w-7xl lg:mx-auto lg:mt-8 lg:rounded-t-2xl lg:border lg:border-white/40 lg:shadow-[0_45px_100px_10px_rgba(0,0,0,0.25)] bg-bg-main text-text-body flex flex-col overflow-hidden">
       {/* Шапка сайту */}
@@ -36,6 +62,14 @@ export default function BlogPage() {
             </p>
             <div className="mt-3 h-1 w-16 bg-brand-logoName mx-auto rounded-full" />
           </div>
+
+          {/* Індикатор завантаження бази даних */}
+          {loading && (
+            <div className="mb-6 flex justify-center items-center gap-2 text-xs font-bold text-slate-500 bg-white border-2 border-black rounded-xl px-4 py-2 w-max mx-auto shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-secondary" />
+              <span>Оновлення статей з бази даних...</span>
+            </div>
+          )}
 
           {/* Список статей */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">

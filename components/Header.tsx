@@ -14,6 +14,16 @@ export default function Header() {
     { name: "Корисна інформація", href: "/blog", isPage: true }, // НАШ НОВИЙ ПУНКТ
   ];
 
+  const mobileMenuItems = [
+    { name: "Курси", href: "/#courses", isPage: false },
+    { name: "Викладачі", href: "/#teachers", isPage: false },
+    { name: "Ціни", href: "/#prices", isPage: false },
+    { name: "Результати", href: "/#benefits", isPage: false },
+    { name: "Фотогалерея", href: "/#gallery", isPage: false },
+    { name: "Відгуки", href: "/#reviews", isPage: false },
+    { name: "Корисна інформація", href: "/blog", isPage: true },
+  ];
+
   return (
     <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-7xl border-2 border-black backdrop-blur-md rounded-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-bg-header/90">
       <div className="mx-auto flex h-20 items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -73,7 +83,7 @@ export default function Header() {
 
           <a
             href="/#contacts"
-            className="rounded-xl bg-btn-ctaBg border-2 border-black px-4 xl:px-5 py-2 text-xs font-black uppercase tracking-wider text-btn-ctaText shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[3px] active:translate-y-[3px] active:scale-[0.97] transition-all duration-75 whitespace-nowrap"
+            className="rounded-xl bg-white/20 backdrop-blur-md border-2 border-black px-4 xl:px-5 py-2 text-xs font-black uppercase tracking-wider text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:bg-white/35 hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[3px] active:translate-y-[3px] active:scale-[0.97] transition-all duration-75 whitespace-nowrap"
           >
             Записатись
           </a>
@@ -95,27 +105,36 @@ export default function Header() {
       {isOpen && (
         <div className="lg:hidden border-t border-black/10 bg-bg-main px-4 pt-4 pb-6 rounded-b-2xl transition-all">
           <div className="space-y-3">
-            {menuItems.map((item) => 
-              item.isPage ? (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setIsOpen(false)}
-                  className="block rounded-lg px-3 py-2 text-base font-black uppercase tracking-wider text-black hover:bg-black/5 hover:text-brand-secondary"
-                >
-                  {item.name}
-                </Link>
-              ) : (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setIsOpen(false)}
-                  className="block rounded-lg px-3 py-2 text-base font-black uppercase tracking-wider text-black hover:bg-black/5 hover:text-brand-secondary"
-                >
-                  {item.name}
-                </a>
-              )
-            )}
+            <div className="flex flex-col">
+              {mobileMenuItems.map((item, index) => {
+                const linkContent = item.isPage ? (
+                  <Link
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    className="block rounded-lg px-3 py-2 text-base font-black uppercase tracking-wider text-black hover:bg-black/5 hover:text-brand-secondary active:scale-[0.98] transition-all duration-75"
+                  >
+                    {item.name}
+                  </Link>
+                ) : (
+                  <a
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    className="block rounded-lg px-3 py-2 text-base font-black uppercase tracking-wider text-black hover:bg-black/5 hover:text-brand-secondary active:scale-[0.98] transition-all duration-75"
+                  >
+                    {item.name}
+                  </a>
+                );
+
+                return (
+                  <div key={item.name}>
+                    {linkContent}
+                    {index < mobileMenuItems.length - 1 && (
+                      <div className="h-px bg-black/[0.06] my-1 mx-3" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
             <hr className="my-4 border-black/10" />
             <a
               href="tel:+380000000000"
@@ -128,7 +147,7 @@ export default function Header() {
             <a
               href="/#contacts"
               onClick={() => setIsOpen(false)}
-              className="block w-full rounded-xl bg-btn-ctaBg border-2 border-black py-3 text-center text-base font-black uppercase tracking-wider text-btn-ctaText shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] active:scale-[0.97] transition-all duration-75"
+              className="block w-full rounded-xl bg-white/20 backdrop-blur-md border-2 border-black py-3 text-center text-base font-black uppercase tracking-wider text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-white/35 active:shadow-none active:translate-x-[4px] active:translate-y-[4px] active:scale-[0.97] transition-all duration-75"
             >
               Записатись
             </a>

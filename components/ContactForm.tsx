@@ -1,12 +1,73 @@
 "use client";
 
-import { useState, FormEvent, useEffect } from "react";
-import { Phone, MapPin, Clock, Send } from "lucide-react";
+import { useState, FormEvent, useEffect, useRef } from "react";
+import { Phone, MapPin, Clock, Send, ChevronDown } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+
+const courseOptions = [
+  { value: "", label: "Ще не визначились" },
+  {
+    category: "Групові заняття",
+    items: [
+      { value: "tutor_group", label: "📚 Репетиторство (Група)" },
+      { value: "english_group", label: "🇬🇧 Англійська мова (Група)" },
+      { value: "speech_group", label: "🗣️ Логопед (Група)" },
+      { value: "mental_group", label: "🧮 Ментальна арифметика (Група)" },
+      { value: "speedread_group", label: "⚡ Швидкочитання (Група)" },
+      { value: "school_group", label: "🎒 Підготовка до школи (Група)" },
+    ],
+  },
+  {
+    category: "Індивідуальні заняття",
+    items: [
+      { value: "tutor_indiv", label: "📚 Репетиторство (Індивідуально)" },
+      { value: "english_indiv", label: "🇬🇧 Англійська мова (Індивідуально)" },
+      { value: "speech_indiv", label: "🗣️ Логопед (Індивідуально)" },
+      { value: "multiply_indiv", label: "✖️ Таблиця множення (Індивідуально)" },
+      { value: "mental_indiv", label: "🧮 Ментальна арифметика (Індивідуально)" },
+      { value: "speedread_indiv", label: "⚡ Швидкочитання (Індивідуально)" },
+      { value: "school_indiv", label: "🎒 Підготовка до школи (Індивідуально)" },
+    ],
+  },
+];
 
 export default function ContactForm() {
   // Стейт для полів форми
   const [formData, setFormData] = useState({ name: "", phone: "", course: "", comment: "" });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const getSelectedCourseLabel = (value: string) => {
+    if (!value) return "Оберіть напрямок...";
+    if (value === "") return "Ще не визначились";
+
+    // Пошук у групах
+    const groupItems = courseOptions[1].items;
+    if (groupItems) {
+      const found = groupItems.find(item => item.value === value);
+      if (found) return found.label;
+    }
+
+    // Пошук в індивідуальних
+    const indivItems = courseOptions[2].items;
+    if (indivItems) {
+      const found = indivItems.find(item => item.value === value);
+      if (found) return found.label;
+    }
+
+    return "✨ Оберіть напрямок...";
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const handleSelect = (e: Event) => {
@@ -19,20 +80,44 @@ export default function ContactForm() {
     return () => window.removeEventListener("select-course", handleSelect);
   }, []);
 
-  const handleSubmit = (e: FormEvent) => {
+  const [isSending, setIsSending] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    console.log("Дані форми:", formData);
-    setIsSubmitted(true);
-    setFormData({ name: "", phone: "", course: "", comment: "" });
+    setIsSending(true);
+    setSubmitError(null);
+
+    try {
+      const { error } = await supabase.from("leads").insert([
+        {
+          name: formData.name,
+          phone: formData.phone,
+          course: formData.course || null,
+          comment: formData.comment || null,
+          status: "new",
+        },
+      ]);
+
+      if (error) throw error;
+
+      setIsSubmitted(true);
+      setFormData({ name: "", phone: "", course: "", comment: "" });
+    } catch (err: any) {
+      console.error("Error submitting lead:", err);
+      setSubmitError("Помилка відправки. Спробуйте ще раз або зв'яжіться з нами по телефону.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
     <section id="contacts" className="relative bg-transparent pt-16 pb-24 border-t border-black/5">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        
+
         {/* Головна двоколонкова сітка */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 max-w-6xl mx-auto items-start">
-          
+
           {/* КОЛОНКА 1: КОНТАКТИ */}
           <div className="lg:col-span-5 animate-fade-in-up opacity-0 text-center lg:text-left flex flex-col items-center lg:items-start order-2 lg:order-1" style={{ animationFillMode: 'forwards' }}>
             <h2 className="text-2xl font-black text-text-title uppercase tracking-tight sm:text-3xl">
@@ -83,9 +168,9 @@ export default function ContactForm() {
               <h4 className="text-xs font-extrabold text-text-title uppercase tracking-wider">Ми в соцмережах</h4>
               <div className="mt-3 flex gap-3.5">
                 {/* Instagram */}
-                <a 
-                  href="https://instagram.com" 
-                  target="_blank" 
+                <a
+                  href="https://instagram.com"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border-2 border-black text-text-title shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#facc15] active:shadow-none active:translate-x-[1.5px] active:translate-y-[1.5px] transition-all duration-75 cursor-pointer"
                   aria-label="Instagram"
@@ -96,9 +181,9 @@ export default function ContactForm() {
                 </a>
 
                 {/* Telegram */}
-                <a 
-                  href="https://t.me" 
-                  target="_blank" 
+                <a
+                  href="https://t.me"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border-2 border-black text-text-title shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#229ED9] hover:text-white active:shadow-none active:translate-x-[1.5px] active:translate-y-[1.5px] transition-all duration-75 cursor-pointer"
                   aria-label="Telegram"
@@ -125,7 +210,7 @@ export default function ContactForm() {
                 <div className="mt-8 rounded-2xl bg-emerald-50 border border-emerald-200 p-6 text-center">
                   <h4 className="text-sm font-bold text-emerald-800">Дякуємо, заявку прийнято!</h4>
                   <p className="mt-2 text-xs text-emerald-600 font-medium">Ми зателефонуємо вам найближчим часом.</p>
-                  <button 
+                  <button
                     onClick={() => setIsSubmitted(false)}
                     className="mt-4 text-xs font-bold text-emerald-800 underline hover:text-emerald-950"
                   >
@@ -162,36 +247,75 @@ export default function ContactForm() {
                     />
                   </div>
 
-                  <div>
+                  <div className="relative" ref={dropdownRef}>
                     <label className="block text-[11px] font-extrabold text-text-title uppercase tracking-wider mb-1.5">
                       Оберіть напрямок
                     </label>
-                    <select
-                      value={formData.course}
-                      onChange={(e) => setFormData({ ...formData, course: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-xs font-medium text-text-title focus:border-bg-header focus:bg-white focus:outline-none transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="">Ще не визначились</option>
-                      
-                      <optgroup label="Групові заняття" className="font-bold text-text-title bg-[#fbf0e3]">
-                        <option value="tutor_group">Репетиторство (Група)</option>
-                        <option value="english_group">Англійська мова (Група)</option>
-                        <option value="speech_group">Логопед (Група)</option>
-                        <option value="mental_group">Ментальна арифметика (Група)</option>
-                        <option value="speedread_group">Швидкочитання (Група)</option>
-                        <option value="school_group">Підготовка до школи (Група)</option>
-                      </optgroup>
 
-                      <optgroup label="Індивідуальні заняття" className="font-bold text-text-title bg-[#fbf0e3]">
-                        <option value="tutor_indiv">Репетиторство (Індивідуально)</option>
-                        <option value="english_indiv">Англійська мова (Індивідуально)</option>
-                        <option value="speech_indiv">Логопед (Індивідуально)</option>
-                        <option value="multiply_indiv">Таблиця множення (Індивідуально)</option>
-                        <option value="mental_indiv">Ментальна арифметика (Індивідуально)</option>
-                        <option value="speedread_indiv">Швидкочитання (Індивідуально)</option>
-                        <option value="school_indiv">Підготовка до школи (Індивідуально)</option>
-                      </optgroup>
-                    </select>
+                    {/* Кнопка-селектор у 3D-стилі */}
+                    <button
+                      type="button"
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      className={`w-full flex items-center justify-between rounded-xl border-2 border-black bg-white px-4 py-3 text-xs font-black uppercase tracking-wider text-text-title transition-all duration-75 cursor-pointer shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[3px] active:translate-y-[3px] ${isDropdownOpen ? "border-brand-primary shadow-none translate-x-[3px] translate-y-[3px]" : ""
+                        }`}
+                    >
+                      <span className="truncate">{getSelectedCourseLabel(formData.course)}</span>
+                      <ChevronDown className={`h-4 w-4 stroke-[3] transition-transform duration-200 flex-shrink-0 ${isDropdownOpen ? "rotate-180 text-brand-primary" : "text-black"
+                        }`} />
+                    </button>
+
+                    {/* Спливаюче меню */}
+                    {isDropdownOpen && (
+                      <div className="absolute left-0 right-0 z-50 mt-2 max-h-64 overflow-y-auto rounded-2xl border-2 border-black bg-white p-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] animate-fade-in-up">
+
+                        {/* Опція: Ще не визначились */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData({ ...formData, course: "" });
+                            setIsDropdownOpen(false);
+                          }}
+                          className={`w-full rounded-xl px-3 py-2.5 text-left text-xs uppercase tracking-wider transition-colors hover:bg-black/5 hover:text-brand-secondary ${
+                            formData.course === ""
+                              ? "font-black text-black"
+                              : "font-semibold text-text-body"
+                          }`}
+                        >
+                          Ще не визначились
+                        </button>
+
+                        {/* Категорії */}
+                        {[courseOptions[1], courseOptions[2]].map((group) => (
+                          <div key={group.category} className="mt-2.5">
+                            {/* Заголовок категорії */}
+                            <div className="px-3 py-1 text-[9px] font-black uppercase tracking-widest text-text-muted bg-slate-100 rounded-lg mb-1 select-none">
+                              {group.category}
+                            </div>
+
+                            {/* Елементи категорії */}
+                            <div className="space-y-0.5">
+                              {group.items?.map((item) => (
+                                <button
+                                  key={item.value}
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData({ ...formData, course: item.value });
+                                    setIsDropdownOpen(false);
+                                  }}
+                                  className={`w-full rounded-xl px-3 py-2.5 text-left text-xs transition-all duration-75 flex items-center gap-2 hover:bg-btn-ctaBg hover:text-black hover:translate-x-1 ${
+                                    formData.course === item.value
+                                      ? "font-black text-black"
+                                      : "font-semibold text-text-body"
+                                  }`}
+                                >
+                                  {item.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -207,13 +331,22 @@ export default function ContactForm() {
                     />
                   </div>
 
-                  <div className="pt-4">
+                  {submitError && (
+                    <div className="rounded-xl border-2 border-black bg-rose-50 p-3 text-xs font-bold text-rose-800 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-center">
+                      {submitError}
+                    </div>
+                  )}
+
+                  <div className="pt-2">
                     <button
                       type="submit"
-                      className="w-full rounded-xl bg-btn-ctaBg py-3.5 text-xs font-black uppercase tracking-wider text-btn-ctaText border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] active:scale-[0.98] transition-all duration-75 flex items-center justify-center gap-2 cursor-pointer"
+                      disabled={isSending}
+                      className={`w-full rounded-xl bg-btn-ctaBg py-3.5 text-xs font-black uppercase tracking-wider text-btn-ctaText border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] active:scale-[0.98] transition-all duration-75 flex items-center justify-center gap-2 cursor-pointer ${
+                        isSending ? "opacity-75 cursor-not-allowed" : ""
+                      }`}
                     >
-                      <span>Надіслати заявку</span>
-                      <Send className="h-3.5 w-3.5 stroke-[2.5]" />
+                      <span>{isSending ? "Надсилання..." : "Надіслати заявку"}</span>
+                      <Send className={`h-3.5 w-3.5 stroke-[2.5] ${isSending ? "animate-pulse" : ""}`} />
                     </button>
                   </div>
                 </form>
@@ -222,7 +355,7 @@ export default function ContactForm() {
           </div>
 
         </div>
-        
+
       </div>
     </section>
   );

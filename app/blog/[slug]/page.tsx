@@ -1,12 +1,13 @@
 "use client";
 
+import { useState, useEffect, use } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { articles } from "@/data/articles";
-import { Calendar, ChevronLeft } from "lucide-react";
-import { use } from "react";
+import { articles as fallbackArticles } from "@/data/articles";
+import { Calendar, ChevronLeft, Loader2 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { supabase } from "@/lib/supabase";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -14,7 +15,46 @@ interface PageProps {
 
 export default function ArticlePage({ params }: PageProps) {
   const { slug } = use(params);
-  const article = articles.find((a) => a.slug === slug);
+  const [article, setArticle] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchArticle = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("articles")
+          .select("*")
+          .eq("slug", slug)
+          .single();
+
+        if (error) throw error;
+        if (data) {
+          setArticle(data);
+        }
+      } catch (err) {
+        console.error("Error fetching article from DB:", err);
+        // Fallback to static articles
+        const staticArt = fallbackArticles.find((a) => a.slug === slug);
+        if (staticArt) {
+          setArticle(staticArt);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchArticle();
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-bg-main flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-[#0d5087]" />
+          <span className="text-xs font-black uppercase text-slate-500 tracking-wider">Завантаження статті...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (!article) {
     notFound();
@@ -54,9 +94,13 @@ export default function ArticlePage({ params }: PageProps) {
 
           {/* Тіло статті - бруталістичний контейнер-картка */}
           <div className="prose prose-slate max-w-none text-text-body text-sm sm:text-base leading-relaxed space-y-5 font-semibold bg-white border-2 border-black p-6 sm:p-8 rounded-3xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-            {article.content.map((paragraph, index) => (
-              <p key={index}>{paragraph}</p>
-            ))}
+            {article.content && Array.isArray(article.content) ? (
+              article.content.map((paragraph: string, index: number) => (
+                <p key={index}>{paragraph}</p>
+              ))
+            ) : (
+              <p>{article.content}</p>
+            )}
           </div>
 
           {/* Декоративний футер статті */}

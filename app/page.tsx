@@ -25,7 +25,7 @@ export default function Home() {
     <div className="min-h-screen w-full lg:max-w-7xl lg:mx-auto lg:mt-8 lg:rounded-t-2xl lg:border lg:border-white/40 lg:shadow-[0_45px_100px_10px_rgba(0,0,0,0.25)] bg-bg-main text-text-body flex flex-col overflow-hidden">
       {/* Шапка сайту (всередині стрічки) */}
       <Header />
-      
+
       {/* Головний контент */}
       <main className="flex-1">
         <Hero />
@@ -34,8 +34,9 @@ export default function Home() {
         <Teachers />
         <Benefits />
         <Gallery />
-        <ContactForm />
         <Reviews />
+        <ContactForm />
+
         {/* Наступні блоки будуть додаватися сюди */}
       </main>
       <Footer />
