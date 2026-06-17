@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { optimizeImageToWebP } from "@/lib/imageOptimizer";
 import { 
   LogOut, 
   RefreshCw, 
@@ -93,6 +94,12 @@ interface DBCourse {
   sort_order?: number;
 }
 
+interface GalleryPhoto {
+  id: string;
+  created_at: string;
+  url: string;
+  storage_path: string;
+}
 
 const statusOptions = [
   { value: "new", label: "🆕 Нова", bg: "bg-amber-100 text-amber-800 border-amber-300" },
@@ -167,7 +174,7 @@ const translit = (str: string) => {
 };
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<"leads" | "reviews" | "pricing" | "teachers" | "articles" | "courses">("leads");
+  const [activeTab, setActiveTab] = useState<"leads" | "reviews" | "pricing" | "teachers" | "articles" | "courses" | "gallery">("leads");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -306,6 +313,14 @@ export default function AdminDashboard() {
   const [coursesPage, setCoursesPage] = useState(1);
   const coursesPerPage = 3;
 
+  // Gallery states
+  const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([]);
+  const [galleryLoading, setGalleryLoading] = useState(true);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("");
+  const [galleryPage, setGalleryPage] = useState(1);
+  const galleryPerPage = 12;
+
   const router = useRouter();
 
   useEffect(() => {
@@ -322,6 +337,7 @@ export default function AdminDashboard() {
         fetchTeachers();
         fetchArticles();
         fetchCourses();
+        fetchGallery();
       }
     };
     checkAuth();
@@ -441,6 +457,133 @@ export default function AdminDashboard() {
       console.error("Error fetching courses:", err?.message || err);
     } finally {
       setCoursesLoading(false);
+    }
+  };
+
+  const fetchGallery = async () => {
+    setGalleryLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("gallery")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setGalleryPhotos(data || []);
+    } catch (err: any) {
+      console.error("Error fetching gallery:", err?.message || err);
+    } finally {
+      setGalleryLoading(false);
+    }
+  };
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingGallery(true);
+    const filesArray = Array.from(files);
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+      for (let i = 0; i < filesArray.length; i++) {
+        const file = filesArray[i];
+        setUploadStatus(`Оптимізація та завантаження фото ${i + 1} з ${filesArray.length}: "${file.name}"...`);
+
+        try {
+          // 1. Optimize client-side to WebP blob
+          const webpBlob = await optimizeImageToWebP(file);
+
+          // 2. Prepare storage path
+          const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.webp`;
+          const storagePath = `gallery/${fileName}`;
+
+          // 3. Upload WebP blob to Supabase Storage
+          const { error: uploadError } = await supabase.storage
+            .from("gallery")
+            .upload(storagePath, webpBlob, {
+              contentType: "image/webp",
+              cacheControl: "31536000",
+              upsert: false
+            });
+
+          if (uploadError) {
+            console.error("Storage upload error:", uploadError);
+            throw new Error(uploadError.message || "Помилка завантаження файлу в сховище");
+          }
+
+          // 4. Get Public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from("gallery")
+            .getPublicUrl(storagePath);
+
+          // 5. Insert row into gallery table
+          const { error: dbError } = await supabase
+            .from("gallery")
+            .insert([
+              {
+                url: publicUrl,
+                storage_path: storagePath
+              }
+            ]);
+
+          if (dbError) {
+            console.error("Database insert error:", dbError);
+            throw new Error(dbError.message || "Помилка збереження запису в базу даних");
+          }
+
+          successCount++;
+        } catch (fileErr: any) {
+          console.error(`Failed to process/upload file "${file.name}":`, fileErr);
+          failCount++;
+        }
+      }
+
+      if (failCount > 0) {
+        alert(`Завантаження завершено з помилками.\nУспішно завантажено: ${successCount}\nПомилок: ${failCount}`);
+      } else {
+        alert(`Успішно завантажено ${successCount} фото!`);
+      }
+      
+      e.target.value = "";
+      fetchGallery();
+    } catch (err: any) {
+      console.error("General upload error:", err);
+      alert(`Помилка під час завантаження: ${err.message || err}`);
+    } finally {
+      setUploadingGallery(false);
+      setUploadStatus("");
+    }
+  };
+
+  const handleDeleteGalleryPhoto = async (id: string, storagePath: string) => {
+    if (!confirm("Ви впевнені, що хочете видалити це фото з галереї?")) return;
+
+    try {
+      // Optimistic update
+      setGalleryPhotos(prev => prev.filter(p => p.id !== id));
+
+      // 1. Delete from Supabase Storage
+      const { error: storageError } = await supabase.storage
+        .from("gallery")
+        .remove([storagePath]);
+
+      if (storageError) {
+        console.error("Storage deletion error (continuing database deletion):", storageError);
+      }
+
+      // 2. Delete from database
+      const { error: dbError } = await supabase
+        .from("gallery")
+        .delete()
+        .eq("id", id);
+
+      if (dbError) throw dbError;
+    } catch (err: any) {
+      console.error("Error deleting photo:", err);
+      alert("Не вдалося видалити фото.");
+      fetchGallery(); // Rollback
     }
   };
 
@@ -1368,6 +1511,8 @@ export default function AdminDashboard() {
       fetchArticles();
     } else if (activeTab === "courses") {
       fetchCourses();
+    } else if (activeTab === "gallery") {
+      fetchGallery();
     }
   };
 
@@ -1555,6 +1700,17 @@ export default function AdminDashboard() {
               >
                 <span>🏫 Напрямки ({courses.length})</span>
               </button>
+              <button 
+                onClick={() => {
+                  setActiveTab("gallery");
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider text-left border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none transition-all flex items-center gap-2.5 cursor-pointer ${
+                  activeTab === "gallery" ? "bg-[#facc15] text-black" : "bg-white text-slate-800"
+                }`}
+              >
+                <span>🖼️ Галерея ({galleryPhotos.length})</span>
+              </button>
             </div>
 
             {/* ACTION BUTTONS AT THE BOTTOM OF THE BURGER MENU */}
@@ -1564,10 +1720,10 @@ export default function AdminDashboard() {
                   handleRefresh();
                   setIsMobileMenuOpen(false);
                 }}
-                disabled={leadsLoading || reviewsLoading || pricingLoading || teachersLoading || articlesLoading || coursesLoading}
+                disabled={leadsLoading || reviewsLoading || pricingLoading || teachersLoading || articlesLoading || coursesLoading || galleryLoading}
                 className="flex-1 bg-white text-black border-2 border-black p-3.5 rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none transition-all cursor-pointer flex items-center justify-center gap-1.5 text-xs font-black uppercase disabled:opacity-50"
               >
-                <RefreshCw className={`h-4 w-4 ${(leadsLoading || reviewsLoading || pricingLoading || teachersLoading || articlesLoading || coursesLoading) ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 ${(leadsLoading || reviewsLoading || pricingLoading || teachersLoading || articlesLoading || coursesLoading || galleryLoading) ? 'animate-spin' : ''}`} />
                 <span>Оновити</span>
               </button>
               <button
@@ -1628,11 +1784,19 @@ export default function AdminDashboard() {
           </button>
           <button 
             onClick={() => setActiveTab("courses")}
-            className={`flex-shrink-0 sm:flex-1 py-4 px-4 text-xs sm:text-sm font-black uppercase tracking-wider transition-colors cursor-pointer text-center flex items-center justify-center gap-2 ${
+            className={`flex-shrink-0 sm:flex-1 py-4 px-4 text-xs sm:text-sm font-black uppercase tracking-wider transition-colors cursor-pointer text-center border-r-4 border-black flex items-center justify-center gap-2 ${
               activeTab === "courses" ? "bg-[#facc15] text-black" : "bg-white text-slate-600 hover:bg-slate-50"
             }`}
           >
             🏫 Напрямки ({courses.length})
+          </button>
+          <button 
+            onClick={() => setActiveTab("gallery")}
+            className={`flex-shrink-0 sm:flex-1 py-4 px-4 text-xs sm:text-sm font-black uppercase tracking-wider transition-colors cursor-pointer text-center flex items-center justify-center gap-2 ${
+              activeTab === "gallery" ? "bg-[#facc15] text-black" : "bg-white text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            🖼️ Галерея ({galleryPhotos.length})
           </button>
         </div>
 
@@ -1645,6 +1809,7 @@ export default function AdminDashboard() {
             {activeTab === "teachers" && "🎓 Керування Викладачами"}
             {activeTab === "articles" && "📝 Керування Статтями блогу"}
             {activeTab === "courses" && "🏫 Керування Напрямками курсів"}
+            {activeTab === "gallery" && "🖼️ Керування Галереєю фото"}
           </h2>
           <div className="text-[9px] font-black text-slate-900 bg-white/60 px-2 py-0.5 rounded border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] uppercase tracking-tight select-none">
             Розділ: {activeTab}
@@ -3769,6 +3934,153 @@ export default function AdminDashboard() {
               )}
             </div>
 
+          </div>
+        )}
+
+        {/* TAB 7: GALLERY CONTENT */}
+        {activeTab === "gallery" && (
+          <div className="flex flex-col gap-6">
+            
+            {/* UPLOAD PANEL */}
+            <div className="border-4 border-black bg-[#facc15]/10 p-6 rounded-3xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col gap-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-black uppercase tracking-wider text-black">
+                    📥 Завантажити фотографії
+                  </h3>
+                  <p className="text-xs font-medium text-slate-700 mt-1">
+                    Ви можете вибрати декілька фото одночасно. Підтримуються формати: JPEG, PNG, HEIC (iPhone).
+                  </p>
+                  <p className="text-xs font-bold text-slate-500 mt-0.5">
+                    * Усі фотографії автоматично стискаються та конвертуються у формат .webp для швидкого завантаження.
+                  </p>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type="file"
+                    id="gallery-file-input"
+                    multiple
+                    accept="image/*"
+                    onChange={handleGalleryUpload}
+                    disabled={uploadingGallery}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="gallery-file-input"
+                    className={`inline-flex items-center gap-2 px-5 py-3 rounded-2xl border-4 border-black bg-[#facc15] font-black text-xs sm:text-sm uppercase tracking-wide shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all cursor-pointer select-none ${
+                      uploadingGallery ? "opacity-50 pointer-events-none cursor-not-allowed" : ""
+                    }`}
+                  >
+                    <Plus className="h-4.5 w-4.5 animate-pulse" />
+                    Обрати файли
+                  </label>
+                </div>
+              </div>
+
+              {/* UPLOADING STATUS */}
+              {uploadingGallery && (
+                <div className="border-2 border-black bg-white p-3.5 rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center gap-3">
+                  <Loader2 className="h-5 w-5 text-amber-500 animate-spin" />
+                  <span className="text-xs font-black text-slate-800 uppercase tracking-wider">
+                    {uploadStatus || "Обробка та завантаження файлів..."}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* PHOTOS GRID */}
+            <div className="border-4 border-black bg-white p-4 sm:p-6 rounded-3xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              {galleryLoading ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-3">
+                  <Loader2 className="h-10 w-10 text-[#facc15] animate-spin" />
+                  <p className="text-xs font-black uppercase tracking-wider text-slate-500">
+                    Завантаження списку фотографій...
+                  </p>
+                </div>
+              ) : galleryPhotos.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-sm font-black uppercase tracking-wider text-slate-500">
+                    🖼️ Галерея порожня. Завантажте перші фотографії!
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                    {(() => {
+                      const displayedPhotos = galleryPhotos.slice(
+                        (galleryPage - 1) * galleryPerPage,
+                        galleryPage * galleryPerPage
+                      );
+
+                      return displayedPhotos.map((photo) => (
+                        <div
+                          key={photo.id}
+                          className="border-4 border-black bg-white p-2.5 rounded-2xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex flex-col gap-2.5 group relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                        >
+                          <div className="relative aspect-square w-full rounded-xl overflow-hidden border-2 border-black bg-slate-50">
+                            <img
+                              src={photo.url}
+                              alt="Gallery photo"
+                              className="object-cover w-full h-full"
+                              loading="lazy"
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-1 border-t-2 border-black/5 pt-2">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                              Завантажено: {new Date(photo.created_at).toLocaleDateString("uk-UA", {
+                                hour: "2-digit",
+                                minute: "2-digit"
+                              })}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteGalleryPhoto(photo.id, photo.storage_path)}
+                              className="w-full bg-rose-500 text-white border-2 border-black py-1.5 px-3 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:shadow-none transition-all cursor-pointer flex items-center justify-center gap-1.5 text-[10px] font-black uppercase"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              <span>Видалити</span>
+                            </button>
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+
+                  {/* PAGINATION CONTROLS */}
+                  {(() => {
+                    const totalGalleryPages = Math.ceil(galleryPhotos.length / galleryPerPage);
+                    if (totalGalleryPages <= 1) return null;
+
+                    return (
+                      <div className="flex items-center justify-center gap-4 mt-6 pt-4 border-t-2 border-slate-100">
+                        <button
+                          type="button"
+                          disabled={galleryPage === 1}
+                          onClick={() => setGalleryPage((prev) => Math.max(prev - 1, 1))}
+                          className="px-3.5 py-2 rounded-xl border-2 border-black bg-white font-black text-xs uppercase shadow-[2.5px_2.5px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2.5px] active:translate-y-[2.5px] active:shadow-none transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0 select-none"
+                        >
+                          Назад
+                        </button>
+                        <span className="text-xs font-black text-slate-800 bg-slate-100 px-3 py-1.5 rounded-lg border-2 border-black shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] select-none">
+                          Сторінка {galleryPage} з {totalGalleryPages}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={galleryPage === totalGalleryPages}
+                          onClick={() => setGalleryPage((prev) => Math.min(prev + 1, totalGalleryPages))}
+                          className="px-3.5 py-2 rounded-xl border-2 border-black bg-white font-black text-xs uppercase shadow-[2.5px_2.5px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2.5px] active:translate-y-[2.5px] active:shadow-none transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0 select-none"
+                        >
+                          Вперед
+                        </button>
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
+            </div>
+            
           </div>
         )}
         
