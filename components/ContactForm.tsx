@@ -169,7 +169,7 @@ export default function ContactForm() {
               <div className="mt-3 flex gap-3.5">
                 {/* Instagram */}
                 <a
-                  href="https://instagram.com"
+                  href="https://www.instagram.com/geniusland.school"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border-2 border-black text-text-title shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#facc15] active:shadow-none active:translate-x-[1.5px] active:translate-y-[1.5px] transition-all duration-75 cursor-pointer"
@@ -182,7 +182,7 @@ export default function ContactForm() {
 
                 {/* Telegram */}
                 <a
-                  href="https://t.me"
+                  href="https://t.me/MarinaKorniwska"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border-2 border-black text-text-title shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#229ED9] hover:text-white active:shadow-none active:translate-x-[1.5px] active:translate-y-[1.5px] transition-all duration-75 cursor-pointer"
