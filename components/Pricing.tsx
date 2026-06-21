@@ -32,6 +32,58 @@ export default function Pricing() {
   const [activeCardIndex, setActiveCardIndex] = useState<number | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const wasIntersecting = useRef(false);
+  const [hasDiscount, setHasDiscount] = useState(false);
+
+  // 1. Одноразовий чек URL при завантаженні (з очищенням URL) та прослуховування спеціальної події
+  useEffect(() => {
+    const checkPromo = () => {
+      const url = window.location.href;
+      if (url.includes("promo=friend") || url.includes("discount=10")) {
+        setHasDiscount(true);
+        // Прибираємо параметри з URL, щоб при оновленні сторінки знижка злітала
+        const cleanUrl = window.location.pathname + window.location.hash.split("?")[0];
+        window.history.replaceState(null, "", cleanUrl);
+      }
+    };
+
+    checkPromo();
+
+    // Слухаємо кастомну подію для активації промо при кліку на кнопку в Hero
+    const handlePromoEvent = () => {
+      setHasDiscount(true);
+    };
+    window.addEventListener("activate-friend-promo", handlePromoEvent);
+
+    return () => {
+      window.removeEventListener("activate-friend-promo", handlePromoEvent);
+    };
+  }, []);
+
+  // 2. Детектор виходу з блоку цін через IntersectionObserver
+  useEffect(() => {
+    if (!sectionRef.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          wasIntersecting.current = true;
+        } else if (wasIntersecting.current) {
+          // Якщо блок був видимий, а тепер ні — скидаємо знижку
+          setHasDiscount(false);
+          wasIntersecting.current = false;
+        }
+      },
+      { threshold: 0.0 }
+    );
+
+    observer.observe(sectionRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   const [pricing, setPricing] = useState<{
     group: PricingItem[];
@@ -142,6 +194,26 @@ export default function Pricing() {
     return "top-[188px]";
   };
 
+  const getPriceDisplay = (originalPrice: string) => {
+    if (!hasDiscount) {
+      return <span className="font-extrabold text-sm sm:text-base">{originalPrice}</span>;
+    }
+    const match = originalPrice.match(/\d+/);
+    if (!match) {
+      return <span className="font-extrabold text-sm sm:text-base">{originalPrice}</span>;
+    }
+    const originalNum = parseInt(match[0], 10);
+    const discountedNum = Math.round(originalNum * 0.9);
+    const discountedPrice = `${discountedNum} грн`;
+
+    return (
+      <span className="inline-flex flex-col items-start leading-none align-middle ml-1">
+        <span className="line-through text-white/50 text-[9px] sm:text-[10px] font-normal mb-0.5">{originalPrice}</span>
+        <span className="font-extrabold text-sm sm:text-base text-yellow-300">{discountedPrice}</span>
+      </span>
+    );
+  };
+
   const renderCard = (item: PricingItem, index: number, isDesktop = false) => {
     const isActive = activeCardIndex === index;
     const clickHandler = (e: React.MouseEvent) => {
@@ -155,7 +227,7 @@ export default function Pricing() {
       <div
         key={index}
         onClick={clickHandler}
-        className={`group relative flex items-center justify-between rounded-3xl border-2 border-black bg-[#2572b4] p-3.5 sm:p-4 text-white min-h-[115px] cursor-pointer transition-all duration-150 ${
+        className={`group relative flex items-center justify-between rounded-3xl border-2 border-black bg-brand-secondary p-3.5 sm:p-4 text-white min-h-[115px] cursor-pointer transition-all duration-150 ${
           isDesktop
             ? "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] max-w-sm"
             : isActive
@@ -163,21 +235,29 @@ export default function Pricing() {
               : "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] w-full"
         }`}
       >
+        {/* Кружечок зі знижкою -10% */}
+        {hasDiscount && (
+          <div className="absolute -top-2.5 -right-2 z-20 flex h-7 w-7 -rotate-12 items-center justify-center rounded-full border-2 border-black bg-yellow-300 text-center shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-transform duration-150 group-hover:scale-110">
+            <span className="font-black text-[9px] text-black leading-none">
+              -10%
+            </span>
+          </div>
+        )}
         {/* Ліва текстова частина */}
         <div className="flex flex-col justify-center flex-1 pr-1.5 sm:pr-2 z-10 select-none">
-          <span className="text-[10px] sm:text-[11px] font-black tracking-wider text-[#4a2e1b] uppercase mb-1 sm:mb-1.5 leading-tight">
+          <span className="text-[10px] sm:text-[11px] font-black tracking-wider text-black uppercase mb-1 sm:mb-1.5 leading-tight">
             {item.name}
           </span>
 
           {/* Вартість та заняття */}
           <p className="text-xs sm:text-sm font-black tracking-wide text-white whitespace-nowrap">
-            {item.lessons} - <span className="font-extrabold text-sm sm:text-base">{item.price}</span>
+            {item.lessons} - {getPriceDisplay(item.price)}
           </p>
 
           {/* Альтернативний пакет */}
           {"altPack" in item && item.altPack && (
             <p className="text-xs sm:text-sm font-black tracking-wide text-white mt-1 border-t border-white/20 pt-1 whitespace-nowrap">
-              {item.altPack.lessons} - <span className="font-extrabold text-sm sm:text-base">{item.altPack.price}</span>
+              {item.altPack.lessons} - {getPriceDisplay(item.altPack.price)}
             </p>
           )}
         </div>
@@ -215,7 +295,7 @@ export default function Pricing() {
             onClick={(e) => {
               e.stopPropagation();
               const courseValue = getCourseValue(item.name, billingPlan);
-              window.dispatchEvent(new CustomEvent("select-course", { detail: { courseValue } }));
+              window.dispatchEvent(new CustomEvent("select-course", { detail: { courseValue, hasDiscount } }));
               const contactSection = document.getElementById("contacts");
               if (contactSection) {
                 contactSection.scrollIntoView({ behavior: "smooth" });
@@ -231,7 +311,7 @@ export default function Pricing() {
   };
 
   return (
-    <section id="prices" className="relative bg-transparent pt-12 pb-20 border-t-2 border-black">
+    <section id="prices" ref={sectionRef} className="relative bg-transparent pt-12 pb-20 border-t-2 border-black">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
 
         {/* Заголовок блоку */}
@@ -241,6 +321,8 @@ export default function Pricing() {
           </h2>
           <div className="mt-2 h-1 w-16 bg-brand-logoName mx-auto rounded-full" />
         </div>
+
+
 
         {/* Перемикач форматів занять */}
         <div className="flex justify-center mb-10">
@@ -345,9 +427,13 @@ export default function Pricing() {
           <button 
             onClick={(e) => {
               e.stopPropagation();
-              console.log("Запис на пробне заняття");
+              window.dispatchEvent(new CustomEvent("select-course", { detail: { courseValue: "" } }));
+              const contactSection = document.getElementById("contacts");
+              if (contactSection) {
+                contactSection.scrollIntoView({ behavior: "smooth" });
+              }
             }}
-            className="w-full sm:w-auto rounded-xl border-2 border-black bg-[#2572b4] px-5 py-2 text-xs font-black uppercase tracking-wider text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[1.5px] hover:translate-y-[1.5px] active:shadow-none active:translate-x-[1.5px] active:translate-y-[1.5px] transition-all duration-100 flex-shrink-0 cursor-pointer"
+            className="w-full sm:w-auto rounded-xl border-2 border-black bg-brand-secondary px-5 py-2 text-xs font-black uppercase tracking-wider text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[1.5px] hover:translate-y-[1.5px] active:shadow-none active:translate-x-[1.5px] active:translate-y-[1.5px] transition-all duration-100 flex-shrink-0 cursor-pointer"
           >
             Спробувати
           </button>

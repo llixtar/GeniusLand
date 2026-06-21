@@ -1944,7 +1944,18 @@ export default function AdminDashboard() {
                               {getCourseLabel(lead.course)}
                             </td>
                             <td className="p-4 text-xs text-slate-600 font-semibold border-r border-black/10 max-w-xs italic leading-relaxed">
-                              {lead.comment ? `"${lead.comment}"` : <span className="text-slate-400 not-italic">Немає</span>}
+                              {lead.comment ? (
+                                <div className="space-y-1 not-italic">
+                                  {lead.comment.includes("[АКЦІЯ:") && (
+                                    <span className="inline-block bg-yellow-300 text-black text-[9px] font-black uppercase px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] select-none mb-1">
+                                      Знижка -10%
+                                    </span>
+                                  )}
+                                  <p className="italic">"{lead.comment.replace(/^\[АКЦІЯ:[^\]]+\]\s*/, "")}"</p>
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 not-italic">Немає</span>
+                              )}
                             </td>
                             <td className="p-4 border-r border-black/10">
                               <div className="relative w-max">
@@ -2030,7 +2041,12 @@ export default function AdminDashboard() {
                         </div>
                         {lead.comment && (
                           <div className="text-xs bg-[#fbf0e3] border border-orange-200 p-2.5 rounded-xl text-slate-600 italic">
-                            "{lead.comment}"
+                            {lead.comment.includes("[АКЦІЯ:") && (
+                              <span className="inline-block bg-yellow-300 text-black text-[9px] font-black uppercase px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] not-italic mb-1.5">
+                                Знижка -10%
+                              </span>
+                            )}
+                            <p className="leading-relaxed">"{lead.comment.replace(/^\[АКЦІЯ:[^\]]+\]\s*/, "")}"</p>
                           </div>
                         )}
                         <div>

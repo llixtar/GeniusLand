@@ -36,6 +36,7 @@ export default function ContactForm() {
   const [formData, setFormData] = useState({ name: "", phone: "", course: "", comment: "" });
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isPromoActive, setIsPromoActive] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const getSelectedCourseLabel = (value: string) => {
@@ -75,6 +76,9 @@ export default function ContactForm() {
       if (customEvent.detail?.courseValue) {
         setFormData((prev) => ({ ...prev, course: customEvent.detail.courseValue }));
       }
+      if (customEvent.detail?.hasDiscount !== undefined) {
+        setIsPromoActive(customEvent.detail.hasDiscount);
+      }
     };
     window.addEventListener("select-course", handleSelect);
     return () => window.removeEventListener("select-course", handleSelect);
@@ -89,12 +93,16 @@ export default function ContactForm() {
     setSubmitError(null);
 
     try {
+      const finalComment = isPromoActive
+        ? `[АКЦІЯ: -10% Приведи друга] Друг: ${formData.comment}`
+        : formData.comment;
+
       const { error } = await supabase.from("leads").insert([
         {
           name: formData.name,
           phone: formData.phone,
           course: formData.course || null,
-          comment: formData.comment || null,
+          comment: finalComment || null,
           status: "new",
         },
       ]);
@@ -103,6 +111,7 @@ export default function ContactForm() {
 
       setIsSubmitted(true);
       setFormData({ name: "", phone: "", course: "", comment: "" });
+      setIsPromoActive(false);
     } catch (err: any) {
       console.error("Error submitting lead:", err);
       setSubmitError("Помилка відправки. Спробуйте ще раз або зв'яжіться з нами по телефону.");
@@ -136,7 +145,7 @@ export default function ContactForm() {
                 </div>
                 <div>
                   <h4 className="text-xs font-extrabold text-text-title uppercase tracking-wider">Наша адреса</h4>
-                  <p className="mt-0.5 text-xs font-semibold text-text-muted">м. Хотин, Чернівецька область, Україна</p>
+                  <p className="mt-0.5 text-xs font-semibold text-text-muted">вул. Незалежності, 23 А, м. Хотин</p>
                 </div>
               </div>
 
@@ -146,8 +155,9 @@ export default function ContactForm() {
                 </div>
                 <div>
                   <h4 className="text-xs font-extrabold text-text-title uppercase tracking-wider">Телефон</h4>
-                  <p className="mt-0.5 text-xs font-semibold text-text-muted hover:text-bg-header transition-colors">
-                    <a href="tel:+380500000000">+380 (50) 000-00-00</a>
+                  <p className="mt-0.5 text-xs font-semibold text-text-muted hover:text-bg-header transition-colors flex flex-col gap-0.5">
+                    <a href="tel:+380987580211">+38 (098) 758 02 11</a>
+                    <a href="tel:+380991721452">+38 (099) 172 14 52</a>
                   </p>
                 </div>
               </div>
@@ -158,7 +168,7 @@ export default function ContactForm() {
                 </div>
                 <div>
                   <h4 className="text-xs font-extrabold text-text-title uppercase tracking-wider">Графік роботи</h4>
-                  <p className="mt-0.5 text-xs font-semibold text-text-muted">Пн-Пт: 09:00 - 19:00 | Сб: 10:00 - 15:00</p>
+                  <p className="mt-0.5 text-xs font-semibold text-text-muted">Пн-Сб: 10:00 - 20:00</p>
                 </div>
               </div>
             </div>
@@ -275,11 +285,10 @@ export default function ContactForm() {
                             setFormData({ ...formData, course: "" });
                             setIsDropdownOpen(false);
                           }}
-                          className={`w-full rounded-xl px-3 py-2.5 text-left text-xs uppercase tracking-wider transition-colors hover:bg-black/5 hover:text-brand-secondary ${
-                            formData.course === ""
-                              ? "font-black text-black"
-                              : "font-semibold text-text-body"
-                          }`}
+                          className={`w-full rounded-xl px-3 py-2.5 text-left text-xs uppercase tracking-wider transition-colors hover:bg-black/5 hover:text-brand-secondary ${formData.course === ""
+                            ? "font-black text-black"
+                            : "font-semibold text-text-body"
+                            }`}
                         >
                           Ще не визначились
                         </button>
@@ -302,11 +311,10 @@ export default function ContactForm() {
                                     setFormData({ ...formData, course: item.value });
                                     setIsDropdownOpen(false);
                                   }}
-                                  className={`w-full rounded-xl px-3 py-2.5 text-left text-xs transition-all duration-75 flex items-center gap-2 hover:bg-btn-ctaBg hover:text-black hover:translate-x-1 ${
-                                    formData.course === item.value
-                                      ? "font-black text-black"
-                                      : "font-semibold text-text-body"
-                                  }`}
+                                  className={`w-full rounded-xl px-3 py-2.5 text-left text-xs transition-all duration-75 flex items-center gap-2 hover:bg-btn-ctaBg hover:text-black hover:translate-x-1 ${formData.course === item.value
+                                    ? "font-black text-black"
+                                    : "font-semibold text-text-body"
+                                    }`}
                                 >
                                   {item.label}
                                 </button>
@@ -319,15 +327,23 @@ export default function ContactForm() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-extrabold text-text-title uppercase tracking-wider mb-1.5">
-                      Ваш коментар (необов'язково)
+                    <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-1.5 ${isPromoActive ? "text-brand-secondary" : "text-text-title"}`}>
+                      {isPromoActive ? "Контакти друга (обов'язково для знижки -10%)" : "Ваш коментар (необов'язково)"}
                     </label>
                     <textarea
                       rows={3}
-                      placeholder="Наприклад: краще займатись у першій половині дня..."
+                      required={isPromoActive}
+                      placeholder={isPromoActive 
+                        ? "Вкажіть ім'я та телефон або інший контакт друга, якого ви привели..."
+                        : "Наприклад: краще займатись у першій половині дня..."
+                      }
                       value={formData.comment}
                       onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-xs font-medium text-text-title placeholder-slate-400 focus:border-bg-header focus:bg-white focus:outline-none transition-all resize-none"
+                      className={`w-full rounded-xl border px-4 py-3 text-xs font-medium placeholder-slate-400 focus:bg-white focus:outline-none transition-all resize-none ${
+                        isPromoActive 
+                          ? "border-brand-secondary bg-brand-secondary/5 text-slate-900 focus:border-brand-secondary" 
+                          : "border-slate-200 bg-slate-50/50 text-text-title focus:border-bg-header"
+                      }`}
                     />
                   </div>
 
@@ -341,9 +357,8 @@ export default function ContactForm() {
                     <button
                       type="submit"
                       disabled={isSending}
-                      className={`w-full rounded-xl bg-btn-ctaBg py-3.5 text-xs font-black uppercase tracking-wider text-btn-ctaText border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] active:scale-[0.98] transition-all duration-75 flex items-center justify-center gap-2 cursor-pointer ${
-                        isSending ? "opacity-75 cursor-not-allowed" : ""
-                      }`}
+                      className={`w-full rounded-xl bg-btn-ctaBg py-3.5 text-xs font-black uppercase tracking-wider text-btn-ctaText border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] active:scale-[0.98] transition-all duration-75 flex items-center justify-center gap-2 cursor-pointer ${isSending ? "opacity-75 cursor-not-allowed" : ""
+                        }`}
                     >
                       <span>{isSending ? "Надсилання..." : "Надіслати заявку"}</span>
                       <Send className={`h-3.5 w-3.5 stroke-[2.5] ${isSending ? "animate-pulse" : ""}`} />
