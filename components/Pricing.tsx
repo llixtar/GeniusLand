@@ -34,17 +34,34 @@ export default function Pricing() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
   const wasIntersecting = useRef(false);
-  const [hasDiscount, setHasDiscount] = useState(false);
+  const [discountPercent, setDiscountPercent] = useState<number>(0);
+  const hasDiscount = discountPercent > 0;
 
   // 1. Одноразовий чек URL при завантаженні (з очищенням URL) та прослуховування спеціальної події
   useEffect(() => {
     const checkPromo = () => {
-      const url = window.location.href;
-      if (url.includes("promo=friend") || url.includes("discount=10")) {
-        setHasDiscount(true);
-        // Прибираємо параметри з URL, щоб при оновленні сторінки знижка злітала
+      const urlStr = window.location.href;
+      if (urlStr.includes("promo=friend")) {
+        setDiscountPercent(10);
         const cleanUrl = window.location.pathname + window.location.hash.split("?")[0];
         window.history.replaceState(null, "", cleanUrl);
+        return;
+      }
+
+      // Check for discount parameter
+      try {
+        const urlObj = new URL(urlStr);
+        const discountParam = urlObj.searchParams.get("discount");
+        if (discountParam) {
+          const pct = parseInt(discountParam, 10);
+          if (pct > 0 && pct <= 100) {
+            setDiscountPercent(pct);
+            const cleanUrl = window.location.pathname + window.location.hash.split("?")[0];
+            window.history.replaceState(null, "", cleanUrl);
+          }
+        }
+      } catch (e) {
+        console.error("Error parsing URL", e);
       }
     };
 
@@ -52,12 +69,23 @@ export default function Pricing() {
 
     // Слухаємо кастомну подію для активації промо при кліку на кнопку в Hero
     const handlePromoEvent = () => {
-      setHasDiscount(true);
+      setDiscountPercent(10);
     };
+
+    const handleDynamicPromoEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const pct = customEvent.detail?.percent;
+      if (pct && pct > 0) {
+        setDiscountPercent(pct);
+      }
+    };
+
     window.addEventListener("activate-friend-promo", handlePromoEvent);
+    window.addEventListener("activate-promo-discount", handleDynamicPromoEvent);
 
     return () => {
       window.removeEventListener("activate-friend-promo", handlePromoEvent);
+      window.removeEventListener("activate-promo-discount", handleDynamicPromoEvent);
     };
   }, []);
 
@@ -71,7 +99,7 @@ export default function Pricing() {
           wasIntersecting.current = true;
         } else if (wasIntersecting.current) {
           // Якщо блок був видимий, а тепер ні — скидаємо знижку
-          setHasDiscount(false);
+          setDiscountPercent(0);
           wasIntersecting.current = false;
         }
       },
@@ -203,7 +231,7 @@ export default function Pricing() {
       return <span className="font-extrabold text-sm sm:text-base">{originalPrice}</span>;
     }
     const originalNum = parseInt(match[0], 10);
-    const discountedNum = Math.round(originalNum * 0.9);
+    const discountedNum = Math.round(originalNum * (1 - discountPercent / 100));
     const discountedPrice = `${discountedNum} грн`;
 
     return (
@@ -235,19 +263,19 @@ export default function Pricing() {
               : "shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] w-full"
         }`}
       >
-        {/* Кружечок зі знижкою -10% */}
+        {/* Кружечок зі знижкою */}
         {hasDiscount && (
           <div className="absolute -top-2.5 -right-2 z-20 flex h-7 w-7 -rotate-12 items-center justify-center rounded-full border-2 border-black bg-yellow-300 text-center shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-transform duration-150 group-hover:scale-110">
             <span className="font-black text-[9px] text-black leading-none">
-              -10%
+              -{discountPercent}%
             </span>
           </div>
         )}
         {/* Ліва текстова частина */}
         <div className="flex flex-col justify-center flex-1 pr-1.5 sm:pr-2 z-10 select-none">
-          <span className="text-[10px] sm:text-[11px] font-black tracking-wider text-black uppercase mb-1 sm:mb-1.5 leading-tight">
+          <h3 className="text-[10px] sm:text-[11px] font-black tracking-wider text-black uppercase mb-1 sm:mb-1.5 leading-tight">
             {item.name}
-          </span>
+          </h3>
 
           {/* Вартість та заняття */}
           <p className="text-xs sm:text-sm font-black tracking-wide text-white whitespace-nowrap">
@@ -295,7 +323,7 @@ export default function Pricing() {
             onClick={(e) => {
               e.stopPropagation();
               const courseValue = getCourseValue(item.name, billingPlan);
-              window.dispatchEvent(new CustomEvent("select-course", { detail: { courseValue, hasDiscount } }));
+              window.dispatchEvent(new CustomEvent("select-course", { detail: { courseValue, hasDiscount, discountPercent } }));
               const contactSection = document.getElementById("contacts");
               if (contactSection) {
                 contactSection.scrollIntoView({ behavior: "smooth" });
@@ -415,9 +443,9 @@ export default function Pricing() {
         <div className="mt-12 max-w-2xl mx-auto border-2 border-black bg-btn-ctaBg rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
           <div className="flex items-center gap-3 text-center sm:text-left">
             <div>
-              <h4 className="text-sm font-black text-black uppercase tracking-tight">
+              <h3 className="text-sm font-black text-black uppercase tracking-tight">
                 Перше пробне заняття — Безкоштовне
-              </h4>
+              </h3>
               <p className="text-[11px] font-bold text-black/70 uppercase tracking-tight mt-0.5">
                 Визначимо поточний рівень знань дитини абсолютно безкоштовно.
               </p>

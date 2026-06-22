@@ -169,7 +169,7 @@ export default function Courses() {
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
           <Image
             src={course.bgImage}
-            alt={course.title}
+            alt={`Курс ${course.title} у школі GeniusLand Хотин`}
             fill
             sizes="(max-w-640px) 100vw, (max-w-1024px) 50vw, 33vw"
             className="object-cover object-bottom"

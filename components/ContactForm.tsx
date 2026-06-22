@@ -37,6 +37,7 @@ export default function ContactForm() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isPromoActive, setIsPromoActive] = useState(false);
+  const [promoDiscountPercent, setPromoDiscountPercent] = useState<number>(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const getSelectedCourseLabel = (value: string) => {
@@ -73,15 +74,32 @@ export default function ContactForm() {
   useEffect(() => {
     const handleSelect = (e: Event) => {
       const customEvent = e as CustomEvent;
-      if (customEvent.detail?.courseValue) {
+      if (customEvent.detail?.courseValue !== undefined) {
         setFormData((prev) => ({ ...prev, course: customEvent.detail.courseValue }));
       }
       if (customEvent.detail?.hasDiscount !== undefined) {
         setIsPromoActive(customEvent.detail.hasDiscount);
       }
+      if (customEvent.detail?.discountPercent !== undefined) {
+        setPromoDiscountPercent(customEvent.detail.discountPercent);
+      }
     };
+
+    const handlePromoDiscount = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const pct = customEvent.detail?.percent;
+      if (pct && pct > 0) {
+        setPromoDiscountPercent(pct);
+      }
+    };
+
     window.addEventListener("select-course", handleSelect);
-    return () => window.removeEventListener("select-course", handleSelect);
+    window.addEventListener("activate-promo-discount", handlePromoDiscount);
+
+    return () => {
+      window.removeEventListener("select-course", handleSelect);
+      window.removeEventListener("activate-promo-discount", handlePromoDiscount);
+    };
   }, []);
 
   const [isSending, setIsSending] = useState(false);
@@ -93,9 +111,12 @@ export default function ContactForm() {
     setSubmitError(null);
 
     try {
-      const finalComment = isPromoActive
-        ? `[АКЦІЯ: -10% Приведи друга] Друг: ${formData.comment}`
-        : formData.comment;
+      let finalComment = formData.comment;
+      if (promoDiscountPercent > 0) {
+        finalComment = `[АКЦІЯ: Знижка -${promoDiscountPercent}%] ${formData.comment}`;
+      } else if (isPromoActive) {
+        finalComment = `[АКЦІЯ: -10% Приведи друга] Друг: ${formData.comment}`;
+      }
 
       const { error } = await supabase.from("leads").insert([
         {
@@ -112,6 +133,7 @@ export default function ContactForm() {
       setIsSubmitted(true);
       setFormData({ name: "", phone: "", course: "", comment: "" });
       setIsPromoActive(false);
+      setPromoDiscountPercent(0);
     } catch (err: any) {
       console.error("Error submitting lead:", err);
       setSubmitError("Помилка відправки. Спробуйте ще раз або зв'яжіться з нами по телефону.");
@@ -144,7 +166,7 @@ export default function ContactForm() {
                   <MapPin className="h-4 w-4" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-extrabold text-text-title uppercase tracking-wider">Наша адреса</h4>
+                  <h3 className="text-xs font-extrabold text-text-title uppercase tracking-wider">Наша адреса</h3>
                   <p className="mt-0.5 text-xs font-semibold text-text-muted">вул. Незалежності, 23 А, м. Хотин</p>
                 </div>
               </div>
@@ -154,7 +176,7 @@ export default function ContactForm() {
                   <Phone className="h-4 w-4" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-extrabold text-text-title uppercase tracking-wider">Телефон</h4>
+                  <h3 className="text-xs font-extrabold text-text-title uppercase tracking-wider">Телефон</h3>
                   <p className="mt-0.5 text-xs font-semibold text-text-muted hover:text-bg-header transition-colors flex flex-col gap-0.5">
                     <a href="tel:+380987580211">+38 (098) 758 02 11</a>
                     <a href="tel:+380991721452">+38 (099) 172 14 52</a>
@@ -167,7 +189,7 @@ export default function ContactForm() {
                   <Clock className="h-4 w-4" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-extrabold text-text-title uppercase tracking-wider">Графік роботи</h4>
+                  <h3 className="text-xs font-extrabold text-text-title uppercase tracking-wider">Графік роботи</h3>
                   <p className="mt-0.5 text-xs font-semibold text-text-muted">Пн-Сб: 10:00 - 20:00</p>
                 </div>
               </div>
@@ -175,7 +197,7 @@ export default function ContactForm() {
 
             {/* Соцмережі */}
             <div className="mt-10 flex flex-col items-center lg:items-start">
-              <h4 className="text-xs font-extrabold text-text-title uppercase tracking-wider">Ми в соцмережах</h4>
+              <h3 className="text-xs font-extrabold text-text-title uppercase tracking-wider">Ми в соцмережах</h3>
               <div className="mt-3 flex gap-3.5">
                 {/* Instagram */}
                 <a
@@ -209,16 +231,16 @@ export default function ContactForm() {
           {/* КОЛОНКА 2: ФОРМА ЗАПИСУ */}
           <div className="lg:col-span-7 animate-fade-in-up opacity-0 order-1 lg:order-2" style={{ animationDelay: "150ms", animationFillMode: 'forwards' }}>
             <div className="rounded-3xl border border-slate-300/60 bg-white p-6 sm:p-8">
-              <h3 className="text-xl font-black text-text-title uppercase tracking-tight">
+              <h2 className="text-xl font-black text-text-title uppercase tracking-tight">
                 Записати дитину на заняття
-              </h3>
+              </h2>
               <p className="mt-1 text-xs font-medium text-text-muted">
                 Залиште контакти, і наш адміністратор зв'яжеться з вами для підтвердження дати пробного уроку.
               </p>
 
               {isSubmitted ? (
                 <div className="mt-8 rounded-2xl bg-emerald-50 border border-emerald-200 p-6 text-center">
-                  <h4 className="text-sm font-bold text-emerald-800">Дякуємо, заявку прийнято!</h4>
+                  <h3 className="text-sm font-bold text-emerald-800">Дякуємо, заявку прийнято!</h3>
                   <p className="mt-2 text-xs text-emerald-600 font-medium">Ми зателефонуємо вам найближчим часом.</p>
                   <button
                     onClick={() => setIsSubmitted(false)}
@@ -350,6 +372,12 @@ export default function ContactForm() {
                   {submitError && (
                     <div className="rounded-xl border-2 border-black bg-rose-50 p-3 text-xs font-bold text-rose-800 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-center">
                       {submitError}
+                    </div>
+                  )}
+
+                  {promoDiscountPercent > 0 && (
+                    <div className="rounded-xl border-2 border-black bg-yellow-300/30 p-3 text-xs font-black text-slate-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-center uppercase tracking-wider select-none animate-pulse">
+                      🎉 Активовано знижку -{promoDiscountPercent}% на курс!
                     </div>
                   )}
 

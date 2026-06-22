@@ -94,6 +94,23 @@ interface DBCourse {
   sort_order?: number;
 }
 
+
+interface DBPromotion {
+  id?: string;
+  created_at?: string;
+  badge: string;
+  title: string;
+  description: string;
+  discount_text: string;
+  expiry_date: string | null;
+  bg_color: string;
+  text_color: string;
+  link: string;
+  btn_text: string;
+  sort_order?: number;
+  discount_percent?: number;
+}
+
 interface GalleryPhoto {
   id: string;
   created_at: string;
@@ -174,7 +191,7 @@ const translit = (str: string) => {
 };
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<"leads" | "reviews" | "pricing" | "teachers" | "articles" | "courses" | "gallery">("leads");
+  const [activeTab, setActiveTab] = useState<"leads" | "reviews" | "pricing" | "teachers" | "articles" | "courses" | "gallery" | "promotions">("leads");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -321,6 +338,233 @@ export default function AdminDashboard() {
   const [galleryPage, setGalleryPage] = useState(1);
   const galleryPerPage = 12;
 
+
+  // Promotions states
+  const [promotions, setPromotions] = useState<DBPromotion[]>([]);
+  const [promotionsLoading, setPromotionsLoading] = useState(true);
+  
+  const [addPromoBadge, setAddPromoBadge] = useState("АКЦІЯ");
+  const [addPromoTitle, setAddPromoTitle] = useState("");
+  const [addPromoDesc, setAddPromoDesc] = useState("");
+  const [addPromoDiscount, setAddPromoDiscount] = useState("");
+  const [addPromoExpiryType, setAddPromoExpiryType] = useState<"permanent" | "date">("permanent");
+  const [addPromoExpiryDate, setAddPromoExpiryDate] = useState("");
+  const [addPromoBgColor, setAddPromoBgColor] = useState("bg-btn-ctaBg");
+  const [addPromoTextColor, setAddPromoTextColor] = useState("text-btn-ctaText");
+  const [addPromoLinkType, setAddPromoLinkType] = useState<"section" | "custom">("section");
+  const [addPromoSection, setAddPromoSection] = useState("#prices");
+  const [addPromoCustomLink, setAddPromoCustomLink] = useState("");
+  const [addPromoBtnText, setAddPromoBtnText] = useState("Обрати курс");
+  const [addPromoDiscountPercent, setAddPromoDiscountPercent] = useState<number>(0);
+  const [isAddingPromo, setIsAddingPromo] = useState(false);
+
+  const [editingPromoId, setEditingPromoId] = useState<string | null>(null);
+  const [isUpdatingPromo, setIsUpdatingPromo] = useState(false);
+
+
+  const fetchPromotions = async () => {
+    setPromotionsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("promotions")
+        .select("*")
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      setPromotions(data || []);
+    } catch (err: any) {
+      console.error("Error fetching promotions:", err?.message || err);
+    } finally {
+      setPromotionsLoading(false);
+    }
+  };
+
+  const handleAddPromotion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addPromoTitle.trim() || !addPromoDesc.trim() || !addPromoDiscount.trim() || !addPromoBtnText.trim()) return;
+    setIsAddingPromo(true);
+
+    try {
+      let expiry_date = null;
+      if (addPromoExpiryType === "date" && addPromoExpiryDate) {
+        expiry_date = new Date(addPromoExpiryDate).toISOString();
+      }
+
+      let finalLink = addPromoLinkType === "section" ? addPromoSection : addPromoCustomLink;
+
+      const nextSortOrder = promotions.length > 0 ? Math.max(...promotions.map(p => p.sort_order || 0)) + 1 : 0;
+
+      const { data, error } = await supabase
+        .from("promotions")
+        .insert([{
+          badge: addPromoBadge,
+          title: addPromoTitle,
+          description: addPromoDesc,
+          discount_text: addPromoDiscount,
+          expiry_date,
+          bg_color: addPromoBgColor,
+          text_color: addPromoTextColor,
+          link: finalLink,
+          btn_text: addPromoBtnText,
+          sort_order: nextSortOrder,
+          discount_percent: addPromoDiscountPercent
+        }])
+        .select();
+
+      if (error) throw error;
+      
+      if (data && data[0]) {
+        setPromotions(prev => [...prev, data[0]]);
+      }
+      
+      setAddPromoTitle("");
+      setAddPromoDesc("");
+      setAddPromoDiscount("");
+      setAddPromoCustomLink("");
+      setAddPromoDiscountPercent(0);
+    } catch (err) {
+      console.error("Error adding promotion:", err);
+      alert("Не вдалося додати акцію.");
+    } finally {
+      setIsAddingPromo(false);
+    }
+  };
+
+  
+  const handleStartEditPromotion = (promo: DBPromotion) => {
+    setEditingPromoId(promo.id!);
+    setAddPromoBadge(promo.badge);
+    setAddPromoTitle(promo.title);
+    setAddPromoDesc(promo.description);
+    setAddPromoDiscount(promo.discount_text);
+    
+    if (promo.expiry_date) {
+      setAddPromoExpiryType("date");
+      // Format to datetime-local expected string
+      const d = new Date(promo.expiry_date);
+      const pad = (n: number) => n.toString().padStart(2, "0");
+      setAddPromoExpiryDate(`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`);
+    } else {
+      setAddPromoExpiryType("permanent");
+      setAddPromoExpiryDate("");
+    }
+    
+    setAddPromoBgColor(promo.bg_color);
+    setAddPromoTextColor(promo.text_color);
+    setAddPromoBtnText(promo.btn_text);
+    setAddPromoDiscountPercent(promo.discount_percent || 0);
+    
+    if (promo.link.startsWith("#")) {
+      setAddPromoLinkType("section");
+      setAddPromoSection(promo.link);
+      setAddPromoCustomLink("");
+    } else {
+      setAddPromoLinkType("custom");
+      setAddPromoSection("#prices");
+      setAddPromoCustomLink(promo.link);
+    }
+    
+    // Scroll to top to show form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleUpdatePromotion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPromoId || !addPromoTitle.trim() || !addPromoDesc.trim() || !addPromoDiscount.trim() || !addPromoBtnText.trim()) return;
+    setIsUpdatingPromo(true);
+
+    try {
+      let expiry_date = null;
+      if (addPromoExpiryType === "date" && addPromoExpiryDate) {
+        expiry_date = new Date(addPromoExpiryDate).toISOString();
+      }
+
+      let finalLink = addPromoLinkType === "section" ? addPromoSection : addPromoCustomLink;
+
+      const { error } = await supabase
+        .from("promotions")
+        .update({
+          badge: addPromoBadge,
+          title: addPromoTitle,
+          description: addPromoDesc,
+          discount_text: addPromoDiscount,
+          expiry_date,
+          bg_color: addPromoBgColor,
+          text_color: addPromoTextColor,
+          link: finalLink,
+          btn_text: addPromoBtnText,
+          discount_percent: addPromoDiscountPercent
+        })
+        .eq("id", editingPromoId);
+
+      if (error) throw error;
+      
+      setPromotions(prev => prev.map(p => p.id === editingPromoId ? {
+        ...p,
+        badge: addPromoBadge,
+        title: addPromoTitle,
+        description: addPromoDesc,
+        discount_text: addPromoDiscount,
+        expiry_date,
+        bg_color: addPromoBgColor,
+        text_color: addPromoTextColor,
+        link: finalLink,
+        btn_text: addPromoBtnText,
+        discount_percent: addPromoDiscountPercent
+      } : p));
+      
+      setEditingPromoId(null);
+      setAddPromoBadge("АКЦІЯ");
+      setAddPromoTitle("");
+      setAddPromoDesc("");
+      setAddPromoDiscount("");
+      setAddPromoExpiryType("permanent");
+      setAddPromoExpiryDate("");
+      setAddPromoBgColor("bg-btn-ctaBg");
+      setAddPromoTextColor("text-btn-ctaText");
+      setAddPromoLinkType("section");
+      setAddPromoSection("#prices");
+      setAddPromoCustomLink("");
+      setAddPromoBtnText("Обрати курс");
+      setAddPromoDiscountPercent(0);
+    } catch (err) {
+      console.error("Error updating promotion:", err);
+      alert("Не вдалося оновити акцію.");
+    } finally {
+      setIsUpdatingPromo(false);
+    }
+  };
+
+  const handleCancelEditPromo = () => {
+    setEditingPromoId(null);
+    setAddPromoBadge("АКЦІЯ");
+    setAddPromoTitle("");
+    setAddPromoDesc("");
+    setAddPromoDiscount("");
+    setAddPromoExpiryType("permanent");
+    setAddPromoExpiryDate("");
+    setAddPromoBgColor("bg-btn-ctaBg");
+    setAddPromoTextColor("text-btn-ctaText");
+    setAddPromoLinkType("section");
+    setAddPromoSection("#prices");
+    setAddPromoCustomLink("");
+    setAddPromoBtnText("Обрати курс");
+    setAddPromoDiscountPercent(0);
+  };
+
+  const handleDeletePromotion = async (id: string) => {
+    if (!confirm("Видалити цю акцію?")) return;
+    try {
+      setPromotions(prev => prev.filter(p => p.id !== id));
+      const { error } = await supabase.from("promotions").delete().eq("id", id);
+      if (error) throw error;
+    } catch (err) {
+      alert("Помилка видалення.");
+      fetchPromotions();
+    }
+  };
+
+  // End of promotions state
+
   const router = useRouter();
 
   useEffect(() => {
@@ -338,6 +582,7 @@ export default function AdminDashboard() {
         fetchArticles();
         fetchCourses();
         fetchGallery();
+        fetchPromotions();
       }
     };
     checkAuth();
@@ -1711,6 +1956,17 @@ export default function AdminDashboard() {
               >
                 <span>🖼️ Галерея ({galleryPhotos.length})</span>
               </button>
+              <button 
+                onClick={() => {
+                  setActiveTab("promotions");
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider text-left border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none transition-all flex items-center gap-2.5 cursor-pointer ${
+                  activeTab === "promotions" ? "bg-[#facc15] text-black" : "bg-white text-slate-800"
+                }`}
+              >
+                <span>🎁 Акції ({promotions.length})</span>
+              </button>
             </div>
 
             {/* ACTION BUTTONS AT THE BOTTOM OF THE BURGER MENU */}
@@ -1792,11 +2048,19 @@ export default function AdminDashboard() {
           </button>
           <button 
             onClick={() => setActiveTab("gallery")}
-            className={`flex-shrink-0 sm:flex-1 py-4 px-4 text-xs sm:text-sm font-black uppercase tracking-wider transition-colors cursor-pointer text-center flex items-center justify-center gap-2 ${
+            className={`flex-shrink-0 sm:flex-1 py-4 px-4 text-xs sm:text-sm font-black uppercase tracking-wider transition-colors cursor-pointer text-center flex items-center justify-center gap-2 border-r-4 border-black ${
               activeTab === "gallery" ? "bg-[#facc15] text-black" : "bg-white text-slate-600 hover:bg-slate-50"
             }`}
           >
             🖼️ Галерея ({galleryPhotos.length})
+          </button>
+          <button 
+            onClick={() => setActiveTab("promotions")}
+            className={`flex-shrink-0 sm:flex-1 py-4 px-4 text-xs sm:text-sm font-black uppercase tracking-wider transition-colors cursor-pointer text-center flex items-center justify-center gap-2 ${
+              activeTab === "promotions" ? "bg-[#facc15] text-black" : "bg-white text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            🎁 Акції ({promotions.length})
           </button>
         </div>
 
@@ -1810,6 +2074,7 @@ export default function AdminDashboard() {
             {activeTab === "articles" && "📝 Керування Статтями блогу"}
             {activeTab === "courses" && "🏫 Керування Напрямками курсів"}
             {activeTab === "gallery" && "🖼️ Керування Галереєю фото"}
+            {activeTab === "promotions" && "🎁 Керування Акціями"}
           </h2>
           <div className="text-[9px] font-black text-slate-900 bg-white/60 px-2 py-0.5 rounded border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] uppercase tracking-tight select-none">
             Розділ: {activeTab}
@@ -3952,6 +4217,167 @@ export default function AdminDashboard() {
 
           </div>
         )}
+
+        
+        {/* TAB 8: PROMOTIONS CONTENT */}
+        {activeTab === "promotions" && (
+          <div className="flex flex-col gap-6">
+            <div className="border-4 border-black bg-[#facc15]/10 p-6 rounded-3xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <h3 className="text-xl font-black uppercase tracking-wider text-black mb-6">{editingPromoId ? "✏️ Редагувати акцію" : "➕ Додати нову акцію"}</h3>
+              <form onSubmit={editingPromoId ? handleUpdatePromotion : handleAddPromotion} className="flex flex-col gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-black uppercase text-slate-500 mb-1">Бейдж (напис на плашці)</label>
+                    <input type="text" value={addPromoBadge} onChange={e => setAddPromoBadge(e.target.value)} placeholder="Напр. АКЦІЯ або НОВИНКА" className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-[#facc15] transition-colors" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black uppercase text-slate-500 mb-1">Текст знижки (кругла плашка)</label>
+                    <input type="text" value={addPromoDiscount} onChange={e => setAddPromoDiscount(e.target.value)} placeholder="Напр. -10% або FREE" className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-[#facc15] transition-colors" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black uppercase text-slate-500 mb-1">Знижка на тарифи (%, тільки число)</label>
+                    <input type="number" min="0" max="100" value={addPromoDiscountPercent === 0 ? "" : addPromoDiscountPercent} onChange={e => setAddPromoDiscountPercent(Math.max(0, Math.min(100, parseInt(e.target.value, 10) || 0)))} onWheel={(e) => (e.target as HTMLInputElement).blur()} placeholder="Напр. 10 (активує автоматичну знижку)" className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-[#facc15] transition-colors" />
+                  </div>
+                  <div className="md:col-span-3">
+                    <label className="block text-xs font-black uppercase text-slate-500 mb-1">Заголовок акції</label>
+                    <input type="text" value={addPromoTitle} onChange={e => setAddPromoTitle(e.target.value)} className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-[#facc15] transition-colors" />
+                  </div>
+                  <div className="md:col-span-3">
+                    <label className="block text-xs font-black uppercase text-slate-500 mb-1">Опис (можна в кілька рядків)</label>
+                    <textarea rows={3} value={addPromoDesc} onChange={e => setAddPromoDesc(e.target.value)} className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-[#facc15] transition-colors" />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-black uppercase text-slate-500 mb-1">Тип дійсності</label>
+                    <select value={addPromoExpiryType} onChange={e => setAddPromoExpiryType(e.target.value as any)} className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-[#facc15] transition-colors">
+                      <option value="permanent">Постійна</option>
+                      <option value="date">До конкретної дати (або таймер)</option>
+                    </select>
+                  </div>
+                  {addPromoExpiryType === "date" && (
+                    <div>
+                      <label className="block text-xs font-black uppercase text-slate-500 mb-1">Дата та час завершення</label>
+                      <input type="datetime-local" value={addPromoExpiryDate} onChange={e => setAddPromoExpiryDate(e.target.value)} className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-[#facc15] transition-colors" />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-black uppercase text-slate-500 mb-1">Колір плашки (Tailwind клас)</label>
+                    <select value={addPromoBgColor} onChange={e => setAddPromoBgColor(e.target.value)} className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-[#facc15] transition-colors">
+                      <option value="bg-btn-ctaBg">Жовтий (bg-btn-ctaBg)</option>
+                      <option value="bg-brand-secondary">Синій (bg-brand-secondary)</option>
+                      <option value="bg-[#e11d48]">Червоний (bg-[#e11d48])</option>
+                      <option value="bg-emerald-500">Зелений (bg-emerald-500)</option>
+                      <option value="bg-violet-500">Фіолетовий (bg-violet-500)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black uppercase text-slate-500 mb-1">Колір тексту на плашці</label>
+                    <select value={addPromoTextColor} onChange={e => setAddPromoTextColor(e.target.value)} className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-[#facc15] transition-colors">
+                      <option value="text-btn-ctaText">Чорний (text-btn-ctaText)</option>
+                      <option value="text-white">Білий (text-white)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-black uppercase text-slate-500 mb-1">Текст кнопки</label>
+                    <input type="text" value={addPromoBtnText} onChange={e => setAddPromoBtnText(e.target.value)} className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-[#facc15] transition-colors" />
+                  </div>
+
+                  <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-black uppercase text-slate-500 mb-1">Куди веде кнопка?</label>
+                      <select value={addPromoLinkType} onChange={e => setAddPromoLinkType(e.target.value as any)} className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-[#facc15] transition-colors">
+                        <option value="section">Блок на сайті</option>
+                        <option value="custom">Своє посилання (Інстаграм, тощо)</option>
+                      </select>
+                    </div>
+                    {addPromoLinkType === "section" ? (
+                      <div>
+                        <label className="block text-xs font-black uppercase text-slate-500 mb-1">Оберіть блок</label>
+                        <select value={addPromoSection} onChange={e => setAddPromoSection(e.target.value)} className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-[#facc15] transition-colors">
+                          <option value="#courses">Курси</option>
+                          <option value="#prices">Тарифи</option>
+                          <option value="#teachers">Викладачі</option>
+                          <option value="#contacts">Контакти</option>
+                        </select>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block text-xs font-black uppercase text-slate-500 mb-1">Вставте посилання</label>
+                        <input type="text" value={addPromoCustomLink} onChange={e => setAddPromoCustomLink(e.target.value)} placeholder="https://instagram.com/..." className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-[#facc15] transition-colors" />
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+                <div className="mt-2 flex justify-end">
+                  
+                  {editingPromoId ? (
+                    <div className="flex gap-2">
+                      <button type="button" onClick={handleCancelEditPromo} className="px-6 py-3 rounded-xl border-4 border-black bg-white font-black text-sm uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all">
+                        Скасувати
+                      </button>
+                      <button type="submit" disabled={isUpdatingPromo} className="px-6 py-3 rounded-xl border-4 border-black bg-[#facc15] font-black text-sm uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all disabled:opacity-50">
+                        {isUpdatingPromo ? "Зберігаємо..." : "Зберегти зміни"}
+                      </button>
+                    </div>
+                  ) : (
+                    <button type="submit" disabled={isAddingPromo} className="px-6 py-3 rounded-xl border-4 border-black bg-[#facc15] font-black text-sm uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all disabled:opacity-50">
+                      {isAddingPromo ? "Додаємо..." : "Додати акцію"}
+                    </button>
+                  )}
+  
+                </div>
+              </form>
+            </div>
+
+            <div className="border-4 border-black bg-white p-6 rounded-3xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <h3 className="text-lg font-black uppercase tracking-wider text-black mb-4">Активні акції</h3>
+              {promotionsLoading ? (
+                <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-[#facc15]" /></div>
+              ) : promotions.length === 0 ? (
+                <p className="text-center text-slate-500 font-bold p-8">Немає акцій. Додайте першу!</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {promotions.map(promo => (
+                    <div key={promo.id} className="border-2 border-black rounded-xl p-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <span className={`text-xs font-bold px-2 py-1 border border-black rounded ${promo.bg_color} ${promo.text_color}`}>{promo.badge}</span>
+                          <span className="text-xs font-bold text-slate-500">{promo.expiry_date ? new Date(promo.expiry_date).toLocaleString('uk') : "Постійна"}</span>
+                        </div>
+                        <h4 className="font-black text-lg mb-1">{promo.title}</h4>
+                        <p className="text-sm text-slate-600 mb-2 line-clamp-2">{promo.description}</p>
+                      </div>
+                      <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-100">
+                        <div className="flex gap-2 items-center">
+                          <span className={`w-10 h-10 rounded-full border-2 border-black flex items-center justify-center font-bold text-xs ${promo.bg_color} ${promo.text_color}`}>{promo.discount_text}</span>
+                          {promo.discount_percent && promo.discount_percent > 0 ? (
+                            <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-yellow-300 border-2 border-black rounded-lg shadow-[1.5px_1.5px_0px_0px_rgba(0,0,0,1)] text-black select-none">
+                              -{promo.discount_percent}% в тарифах
+                            </span>
+                          ) : null}
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <button onClick={() => handleStartEditPromotion(promo)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg">
+                            <Edit3 className="w-5 h-5" />
+                          </button>
+                          <button onClick={() => handleDeletePromotion(promo.id!)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg">
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
 
         {/* TAB 7: GALLERY CONTENT */}
         {activeTab === "gallery" && (

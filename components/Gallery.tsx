@@ -234,7 +234,7 @@ export default function Gallery() {
                   >
                     <Image
                       src={photo.url}
-                      alt="Фото з життя школи"
+                      alt="Фото заняття в школі розвитку GeniusLand Хотин"
                       fill
                       sizes="(max-w-7xl) 33vw, 50vw"
                       priority={globalIndex < 3}
@@ -314,7 +314,7 @@ export default function Gallery() {
             <img
               key={activePhotoIndex}
               src={photos[activePhotoIndex].url}
-              alt="Перегляд фото"
+              alt="Збільшене фото заняття GeniusLand Хотин"
               decoding="async"
               className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl animate-fade-in-quick"
             />

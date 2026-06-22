@@ -47,7 +47,7 @@ export default function Header() {
           <div className="relative h-14 w-14 flex-shrink-0 rounded-full border-2 border-black bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all duration-150 group-hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] group-hover:translate-x-[1px] group-hover:translate-y-[1px] group-active:shadow-none group-active:translate-x-[2px] group-active:translate-y-[2px] overflow-hidden">
             <img
               src="/genius_logo.svg"
-              alt="Genius Land Logo"
+              alt="Логотип школи розвитку GeniusLand у м. Хотин"
               className="h-full w-full object-cover scale-110"
             />
           </div>

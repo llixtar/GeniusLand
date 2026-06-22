@@ -51,6 +51,11 @@
 
 /* Перезаписуємо фон самого монітора ("вуха" по боках) */
 /* Перезаписуємо фон самого монітора ("вуха" по боках) */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 64px; /* Зменшили відступ, щоб секція заїжджала трохи під шапку і заголовок був ближче */
+}
+
 html, body {
   font-family: var(--font-body-texts), sans-serif;
   background-color: #D9C1A6 !important; /* Глибший, насиченіший колір "вух" */

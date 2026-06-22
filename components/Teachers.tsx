@@ -134,7 +134,7 @@ export default function Teachers() {
           >
             <Image
               src={teacher.image}
-              alt={teacher.name}
+              alt={`Викладач ${teacher.name} - школа розвитку GeniusLand Хотин`}
               fill
               className={`object-cover filter grayscale-[15%] group-hover:grayscale-0 transition-all duration-300 ${
                 teacher.name === "Гайсенюк Марина"

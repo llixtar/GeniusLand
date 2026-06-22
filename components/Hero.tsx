@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import { Laptop, MapPin, Tag, ShieldCheck, ChevronLeft, ChevronRight, Clock, Sparkles, X } from "lucide-react";
 
 
@@ -14,49 +15,40 @@ export default function Hero() {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
-  const promotions = [
-    {
-      id: 1,
-      badge: "АКЦІЯ",
-      title: "Приведи друга",
-      desc: "Приведи друга і отримайте знижку -10% на курс! Посилання нижче веде до вибору курсу.",
-      discount: "-10%",
-      expiry: "До 30 червня",
-      color: "bg-btn-ctaBg",
-      textColor: "text-btn-ctaText",
-      link: "#prices?promo=friend",
-      btnText: "Обрати курс"
-    },
-    {
-      id: 2,
-      badge: "РОЗІГРАШ",
-      title: "Тегни друга в коментарях",
-      desc: [
-        "Для участі:",
-        "1. Підпишіться на нашу сторінку.",
-        "2. Лайкніть пост.",
-        "3. Тегніть друга в коментарях під постом."
-      ],
-      discount: "GIFT",
-      expiry: "2026-06-28T15:00:00",
-      color: "bg-[#e11d48]",
-      textColor: "text-white",
-      link: "https://www.instagram.com/geniusland.school",
-      btnText: "Брати участь"
-    },
-    {
-      id: 3,
-      badge: "НОВИНКА",
-      title: "Перший урок",
-      desc: "Спробуйте перше повноцінне заняття для нових учнів абсолютно безкоштовно.",
-      discount: "FREE",
-      expiry: "Постійно",
-      color: "bg-brand-secondary",
-      textColor: "text-white",
-      link: "#contacts",
-      btnText: "Записатись"
-    }
-  ];
+  const [promotions, setPromotions] = useState<any[]>([]);
+  const [promotionsLoading, setPromotionsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPromos = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("promotions")
+          .select("*")
+          .order("sort_order", { ascending: true });
+        if (!error && data) {
+          const mapped = data.map(p => ({
+            id: p.id,
+            badge: p.badge,
+            title: p.title,
+            desc: p.description,
+            discount: p.discount_text,
+            expiryDate: p.expiry_date,
+            color: p.bg_color,
+            textColor: p.text_color,
+            link: p.link,
+            btnText: p.btn_text,
+            discountPercent: p.discount_percent || 0
+          }));
+          setPromotions(mapped);
+        }
+      } catch (err) {
+        console.error("Error fetching promotions", err);
+      } finally {
+        setPromotionsLoading(false);
+      }
+    };
+    fetchPromos();
+  }, []);
 
   const nextPromo = () => {
     setCurrentPromo((prev) => (prev === promotions.length - 1 ? 0 : prev + 1));
@@ -66,8 +58,21 @@ export default function Hero() {
     setCurrentPromo((prev) => (prev === 0 ? promotions.length - 1 : prev - 1));
   };
 
-  const handleCtaClick = (e: React.MouseEvent<HTMLAnchorElement>, link: string) => {
-    if (link.includes("promo=friend")) {
+  const handleCtaClick = (e: React.MouseEvent<HTMLAnchorElement>, promo: any) => {
+    if (promo.discountPercent && promo.discountPercent > 0) {
+      // Activate the discount
+      window.dispatchEvent(new CustomEvent("activate-promo-discount", { detail: { percent: promo.discountPercent } }));
+      
+      // If it points to an anchor on the current page, scroll smoothly
+      if (promo.link.startsWith("#")) {
+        e.preventDefault();
+        window.history.pushState(null, "", `?discount=${promo.discountPercent}${promo.link}`);
+        const target = document.getElementById(promo.link.substring(1));
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth" });
+        }
+      }
+    } else if (promo.link.includes("promo=friend")) {
       e.preventDefault();
       window.history.pushState(null, "", "?promo=friend#prices");
       window.dispatchEvent(new CustomEvent("activate-friend-promo"));
@@ -110,35 +115,51 @@ export default function Hero() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Formatted expiry text for > 7 days
+  const [expiryText, setExpiryText] = useState("Постійна");
+
   // Countdown timer for giveaways or time-limited promotions
   useEffect(() => {
-    const targetDateStr = promotions[currentPromo]?.expiry;
-    if (!targetDateStr || !targetDateStr.includes("T")) {
+    if (promotions.length === 0 || !promotions[currentPromo]) return;
+    const targetDateStr = promotions[currentPromo].expiryDate;
+    
+    if (!targetDateStr) {
       setTimeLeft(null);
+      setExpiryText("Постійна");
+      return;
+    }
+
+    const difference = +new Date(targetDateStr) - +new Date();
+    const daysLeft = difference / (1000 * 60 * 60 * 24);
+
+    if (daysLeft > 7) {
+      setTimeLeft(null);
+      const date = new Date(targetDateStr);
+      const months = ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"];
+      setExpiryText(`до ${date.getDate()} ${months[date.getMonth()]}`);
       return;
     }
 
     const calculateTimeLeft = () => {
-      const difference = +new Date(targetDateStr) - +new Date();
-      if (difference <= 0) {
+      const diff = +new Date(targetDateStr) - +new Date();
+      if (diff <= 0) {
         return { days: 0, hours: 0, minutes: 0, seconds: 0 };
       }
       return {
-        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-        minutes: Math.floor((difference / 1000 / 60) % 60),
-        seconds: Math.floor((difference / 1000) % 60),
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((diff / 1000 / 60) % 60),
+        seconds: Math.floor((diff / 1000) % 60),
       };
     };
 
     setTimeLeft(calculateTimeLeft());
-
     const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft());
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [currentPromo]);
+  }, [currentPromo, promotions]);
 
   // Автоматичне перемикання акцій з паузою на ховер / розгорнутий стан на мобілці
   useEffect(() => {
@@ -165,10 +186,11 @@ export default function Hero() {
           {/* ========================================================= */}
           {/* ЛІВА ЧАСТИНА: Маркетинг + Оновлений заголовок + 3D Стиль */}
           {/* ========================================================= */}
-          <div className="text-center lg:col-span-7 lg:text-left flex flex-col justify-center">
+          <div className={`text-center flex flex-col justify-center transition-all ${promotions.length > 0 ? "lg:col-span-7 lg:text-left" : "lg:col-span-12 items-center"}`}>
 
             {/* Мобільна версія акційної картки над заголовком (замість статичного стікера) */}
-            <div
+            {promotions.length > 0 && (
+              <div
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
@@ -198,24 +220,24 @@ export default function Hero() {
                   </span>
                   {timeLeft ? (
                     <span className="text-[9px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
-                      до кінця: {timeLeft.days}д {timeLeft.hours}г {timeLeft.minutes}хв
+                      {timeLeft.days > 0 ? `до кінця: ${timeLeft.days}д ${timeLeft.hours}г ${timeLeft.minutes}хв` : `до кінця: ${timeLeft.hours}г ${timeLeft.minutes}хв ${timeLeft.seconds}с`}
                     </span>
                   ) : (
                     <span className="text-[9px] font-bold text-text-muted">
-                      {promotions[currentPromo].expiry}
+                      {expiryText}
                     </span>
                   )}
                 </div>
 
-                <h4 className="text-sm font-heading font-black text-text-title leading-tight">
+                <div className="text-sm font-heading font-black text-text-title leading-tight">
                   {promotions[currentPromo].title}
-                </h4>
+                </div>
 
                 {/* Анімований блок розгортання */}
                 <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isMobileExpanded ? "max-h-48 opacity-100 mt-1.5" : "max-h-0 opacity-0 pointer-events-none"}`}>
-                  {Array.isArray(promotions[currentPromo].desc) ? (
+                  {(promotions[currentPromo].desc && promotions[currentPromo].desc.includes("\n")) ? (
                     <div className="text-[11px] font-subheading font-medium text-text-muted leading-relaxed space-y-0.5 mb-2">
-                      {(promotions[currentPromo].desc as string[]).map((line, idx) => (
+                      {(promotions[currentPromo].desc.split("\n")).map((line: string, idx: number) => (
                         <p key={idx} className={idx === 0 ? "font-bold text-text-title" : ""}>
                           {line}
                         </p>
@@ -231,7 +253,7 @@ export default function Hero() {
                   <div className="flex items-center justify-between">
                     <a
                       href={promotions[currentPromo].link}
-                      onClick={(e) => handleCtaClick(e, promotions[currentPromo].link)}
+                      onClick={(e) => handleCtaClick(e, promotions[currentPromo])}
                       target={promotions[currentPromo].link.startsWith("http") ? "_blank" : undefined}
                       rel={promotions[currentPromo].link.startsWith("http") ? "noopener noreferrer" : undefined}
                       className="text-xs font-button font-black text-brand-secondary hover:underline flex items-center gap-0.5"
@@ -242,6 +264,7 @@ export default function Hero() {
                 </div>
               </div>
             </div>
+            )}
 
             {/* ГОЛОВНИЙ ЗАГОЛОВОК: Окреме керування розмірами тексту */}
             <h1 className="font-black tracking-tight leading-tight uppercase">
@@ -279,16 +302,44 @@ export default function Hero() {
                 Переглянути курси
               </a>
             </div>
+
+            {/* ПЕРЕВАГИ БАТЬКІВ (Замість довгого списку предметів) */}
+            <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center sm:text-left">
+              <div className="p-1">
+                <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                  <Laptop className="h-4 w-4 text-bg-header" />
+                  <h2 className="text-xs font-black text-text-title uppercase tracking-tight">Зручний онлайн</h2>
+                </div>
+                <p className="text-[11px] font-medium text-text-muted leading-snug">Уроки з будь-якої точки світу в комфортному для дитини темпі.</p>
+              </div>
+
+              <div className="p-1">
+                <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                  <MapPin className="h-4 w-4 text-brand-secondary" />
+                  <h2 className="text-xs font-black text-text-title uppercase tracking-tight">Офлайн у Хотині</h2>
+                </div>
+                <p className="text-[11px] font-medium text-text-muted leading-snug">Затишні та безпечні класи для занять наживо у нашому центрі.</p>
+              </div>
+
+              <div className="p-1">
+                <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                  <ShieldCheck className="h-4 w-4 text-brand-logoName stroke-[2.5]" />
+                  <h2 className="text-xs font-black text-text-title uppercase tracking-tight">Без ризиків</h2>
+                </div>
+                <p className="text-[11px] font-medium text-text-muted leading-snug">Спробуйте перший повноцінний ігровий урок повністю безкоштовно.</p>
+              </div>
+            </div>
           </div>
 
           {/* ========================================================= */}
           {/* ПРАВА ЧАСТИНА: Динамічна картка пропозицій (Десктоп)        */}
           {/* ========================================================= */}
-          <div
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
-            className="hidden lg:flex lg:col-span-5 w-full justify-center lg:justify-end"
-          >
+          {promotions.length > 0 && (
+            <div
+              onMouseEnter={() => setIsPaused(true)}
+              onMouseLeave={() => setIsPaused(false)}
+              className="hidden lg:flex lg:col-span-5 w-full justify-center lg:justify-end"
+            >
             <div className="relative w-full max-w-[400px] sm:max-w-[420px] lg:max-w-[450px]">
               {/* Декоративні рамки заднього плану */}
               <div className="absolute inset-0 transform rotate-3 rounded-3xl bg-btn-ctaBg/20 shadow-sm" />
@@ -319,13 +370,13 @@ export default function Hero() {
                       <div className="flex items-center gap-1.5 text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-full border border-rose-200 shadow-[1px_1px_0px_0px_rgba(225,29,72,0.2)]">
                         <Clock className="w-3.5 h-3.5 animate-pulse" />
                         <span>
-                          до кінця: {timeLeft.days}д {timeLeft.hours}г {timeLeft.minutes}хв {timeLeft.seconds}с
+                          {timeLeft.days > 0 ? `до кінця: ${timeLeft.days}д ${timeLeft.hours}г ${timeLeft.minutes}хв` : `до кінця: ${timeLeft.hours}г ${timeLeft.minutes}хв ${timeLeft.seconds}с`}
                         </span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5 text-xs font-bold text-text-muted bg-slate-100 px-3 py-1.5 rounded-full border border-black/10">
                         <Clock className="w-3.5 h-3.5" />
-                        {promotions[currentPromo].expiry}
+                        {expiryText}
                       </div>
                     )}
                   </div>
@@ -338,9 +389,9 @@ export default function Hero() {
                   }`}>
                     {promotions[currentPromo].title}
                   </h3>
-                  {Array.isArray(promotions[currentPromo].desc) ? (
+                  {(promotions[currentPromo].desc && promotions[currentPromo].desc.includes("\n")) ? (
                     <div className="text-sm font-subheading font-medium text-text-muted leading-relaxed space-y-1 mt-1">
-                      {(promotions[currentPromo].desc as string[]).map((line, idx) => (
+                      {(promotions[currentPromo].desc.split("\n")).map((line: string, idx: number) => (
                         <p key={idx} className={idx === 0 ? "font-bold text-text-title mb-1.5" : ""}>
                           {line}
                         </p>
@@ -370,7 +421,7 @@ export default function Hero() {
                   {/* Кнопка дії */}
                   <a
                     href={promotions[currentPromo].link}
-                    onClick={(e) => handleCtaClick(e, promotions[currentPromo].link)}
+                    onClick={(e) => handleCtaClick(e, promotions[currentPromo])}
                     target={promotions[currentPromo].link.startsWith("http") ? "_blank" : undefined}
                     rel={promotions[currentPromo].link.startsWith("http") ? "noopener noreferrer" : undefined}
                     className={`flex-1 ml-4 text-center py-3 rounded-xl border-2 border-black font-button font-black uppercase text-sm tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:translate-x-1 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none transition-all ${promotions[currentPromo].color} ${promotions[currentPromo].textColor}`}
@@ -382,33 +433,7 @@ export default function Hero() {
               </div>
             </div>
           </div>
-
-          {/* ПЕРЕВАГИ БАТЬКІВ (Замість довгого списку предметів) */}
-          <div className="lg:col-span-12 mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-black/5 pt-8 text-center sm:text-left">
-            <div className="p-1">
-              <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
-                <Laptop className="h-4 w-4 text-bg-header" />
-                <h4 className="text-xs font-black text-text-title uppercase tracking-tight">Зручний онлайн</h4>
-              </div>
-              <p className="text-[11px] font-medium text-text-muted leading-snug">Уроки з будь-якої точки світу в комфортному для дитини темпі.</p>
-            </div>
-
-            <div className="p-1">
-              <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
-                <MapPin className="h-4 w-4 text-brand-secondary" />
-                <h4 className="text-xs font-black text-text-title uppercase tracking-tight">Офлайн у Хотині</h4>
-              </div>
-              <p className="text-[11px] font-medium text-text-muted leading-snug">Затишні та безпечні класи для занять наживо у нашому центрі.</p>
-            </div>
-
-            <div className="p-1">
-              <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
-                <ShieldCheck className="h-4 w-4 text-brand-logoName stroke-[2.5]" />
-                <h4 className="text-xs font-black text-text-title uppercase tracking-tight">Без ризиків</h4>
-              </div>
-              <p className="text-[11px] font-medium text-text-muted leading-snug">Спробуйте перший повноцінний ігровий урок повністю безкоштовно.</p>
-            </div>
-          </div>
+          )}
 
         </div>
       </div>
